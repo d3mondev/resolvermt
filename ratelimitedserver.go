@@ -34,7 +34,7 @@ func newRateLimitedServer(ipAddrPort string, queriesPerSecond int) *rateLimitedS
 
 	return &rateLimitedServer{
 		ipAddrPort: ipAddrPort,
-		limiter:    ratelimit.New(queriesPerSecond),
+		limiter:    ratelimit.New(queriesPerSecond, ratelimit.WithoutSlack),
 	}
 }
 
