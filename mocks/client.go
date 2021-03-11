@@ -6,7 +6,6 @@ package mock_multidns
 
 import (
 	reflect "reflect"
-	time "time"
 
 	multidns "github.com/d3mondev/multidns"
 	gomock "github.com/golang/mock/gomock"
@@ -49,31 +48,31 @@ func (mr *MockClientMockRecorder) Resolve(domains, rrtype interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockClient)(nil).Resolve), domains, rrtype)
 }
 
-// Mockresolver is a mock of resolver interface.
-type Mockresolver struct {
+// MockResolver is a mock of Resolver interface.
+type MockResolver struct {
 	ctrl     *gomock.Controller
-	recorder *MockresolverMockRecorder
+	recorder *MockResolverMockRecorder
 }
 
-// MockresolverMockRecorder is the mock recorder for Mockresolver.
-type MockresolverMockRecorder struct {
-	mock *Mockresolver
+// MockResolverMockRecorder is the mock recorder for MockResolver.
+type MockResolverMockRecorder struct {
+	mock *MockResolver
 }
 
-// NewMockresolver creates a new mock instance.
-func NewMockresolver(ctrl *gomock.Controller) *Mockresolver {
-	mock := &Mockresolver{ctrl: ctrl}
-	mock.recorder = &MockresolverMockRecorder{mock}
+// NewMockResolver creates a new mock instance.
+func NewMockResolver(ctrl *gomock.Controller) *MockResolver {
+	mock := &MockResolver{ctrl: ctrl}
+	mock.recorder = &MockResolverMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockresolver) EXPECT() *MockresolverMockRecorder {
+func (m *MockResolver) EXPECT() *MockResolverMockRecorder {
 	return m.recorder
 }
 
 // Resolve mocks base method.
-func (m *Mockresolver) Resolve(query string, rrtype multidns.RRtype) []multidns.Record {
+func (m *MockResolver) Resolve(query string, rrtype multidns.RRtype) []multidns.Record {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Resolve", query, rrtype)
 	ret0, _ := ret[0].([]multidns.Record)
@@ -81,42 +80,7 @@ func (m *Mockresolver) Resolve(query string, rrtype multidns.RRtype) []multidns.
 }
 
 // Resolve indicates an expected call of Resolve.
-func (mr *MockresolverMockRecorder) Resolve(query, rrtype interface{}) *gomock.Call {
+func (mr *MockResolverMockRecorder) Resolve(query, rrtype interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*Mockresolver)(nil).Resolve), query, rrtype)
-}
-
-// Mocksleeper is a mock of sleeper interface.
-type Mocksleeper struct {
-	ctrl     *gomock.Controller
-	recorder *MocksleeperMockRecorder
-}
-
-// MocksleeperMockRecorder is the mock recorder for Mocksleeper.
-type MocksleeperMockRecorder struct {
-	mock *Mocksleeper
-}
-
-// NewMocksleeper creates a new mock instance.
-func NewMocksleeper(ctrl *gomock.Controller) *Mocksleeper {
-	mock := &Mocksleeper{ctrl: ctrl}
-	mock.recorder = &MocksleeperMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mocksleeper) EXPECT() *MocksleeperMockRecorder {
-	return m.recorder
-}
-
-// Sleep mocks base method.
-func (m *Mocksleeper) Sleep(t time.Duration) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Sleep", t)
-}
-
-// Sleep indicates an expected call of Sleep.
-func (mr *MocksleeperMockRecorder) Sleep(t interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sleep", reflect.TypeOf((*Mocksleeper)(nil).Sleep), t)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockResolver)(nil).Resolve), query, rrtype)
 }

@@ -4,20 +4,16 @@ import (
 	"sync/atomic"
 )
 
-type roundRobinList struct {
+type roundRobinBalancer struct {
 	values   []server
 	curIndex int64
 	count    int
 }
 
-type server interface {
-	Take() string
-}
-
-func newRoundRobinList(servers []server) *roundRobinList {
+func newRoundRobinBalancer(servers []server) *roundRobinBalancer {
 	count := len(servers)
 
-	list := roundRobinList{
+	list := roundRobinBalancer{
 		values:   make([]server, count),
 		curIndex: -1,
 		count:    count,
@@ -28,7 +24,7 @@ func newRoundRobinList(servers []server) *roundRobinList {
 	return &list
 }
 
-func (s *roundRobinList) Next() server {
+func (s *roundRobinBalancer) Next() server {
 	if len(s.values) == 0 {
 		return nil
 	}

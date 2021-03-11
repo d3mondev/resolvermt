@@ -1,20 +1,14 @@
 package multidns
 
-import "time"
-
 type clientDNS struct {
-	resolver Resolver
-	sleeper  Sleeper
-
-	workerCount int
+	resolver       Resolver
+	maxConcurrency int
 }
 
-func newClientDNS(resolver Resolver, sleeper Sleeper, parallelCount int) *clientDNS {
+func newClientDNS(resolver Resolver, maxConcurrency int) *clientDNS {
 	client := clientDNS{
-		resolver: resolver,
-		sleeper:  sleeper,
-
-		workerCount: parallelCount,
+		resolver:       resolver,
+		maxConcurrency: maxConcurrency,
 	}
 
 	return &client
@@ -22,21 +16,14 @@ func newClientDNS(resolver Resolver, sleeper Sleeper, parallelCount int) *client
 
 func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 	index := 0
-	channel := make(chan []Record, s.workerCount)
-	activeRoutines := 0
+	activeChan := make(chan bool, s.maxConcurrency)
+	resultChan := make(chan []Record, s.maxConcurrency)
 	records := []Record{}
 
 	for {
-		// Free up completed goroutines
-		for i := len(channel); i > 0; i-- {
-			records = append(records, <-channel...)
-			activeRoutines--
-		}
-
-		// Wait if too many routines are in flight
-		if activeRoutines >= s.workerCount {
-			s.sleeper.Sleep(10 * time.Millisecond)
-			continue
+		// Process completed results
+		for i := len(resultChan); i > 0; i-- {
+			records = append(records, <-resultChan...)
 		}
 
 		// Get the next query
@@ -44,11 +31,13 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 		index++
 
 		// Start a new goroutine
-		activeRoutines++
-		go func(query string, rrtype RRtype, channel chan []Record) {
+		activeChan <- true
+
+		go func(query string, rrtype RRtype, activeChan chan bool, resultChan chan []Record) {
 			records := s.resolver.Resolve(query, rrtype)
-			channel <- records
-		}(query, rrtype, channel)
+			resultChan <- records
+			<-activeChan
+		}(query, rrtype, activeChan, resultChan)
 
 		// Exit condition
 		if index >= len(queries) {
@@ -56,9 +45,9 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 		}
 	}
 
-	// Wait for all goroutines to finish
-	for i := activeRoutines; i > 0; i-- {
-		records = append(records, <-channel...)
+	// Process completed results
+	for len(activeChan) > 0 || len(resultChan) > 0 {
+		records = append(records, <-resultChan...)
 	}
 
 	// Work done

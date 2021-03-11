@@ -6,34 +6,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockResolver struct {
+type stubServer struct {
 	value string
 }
 
-func (s *mockResolver) Take() string {
+func (s *stubServer) Take() string {
 	return s.value
 }
 
 func TestRoundRobinListNext(t *testing.T) {
-	mockResolverA := &mockResolver{"8.8.8.8:53"}
-	mockResolverB := &mockResolver{"8.8.4.4:53"}
+	stubServerA := &stubServer{"8.8.8.8:53"}
+	stubServerB := &stubServer{"8.8.4.4:53"}
 
 	testTable := []struct {
 		name    string
 		servers []server
 		count   int
-		want    *mockResolver
+		want    *stubServer
 	}{
 		{name: "No Items", servers: []server{}, count: 1, want: nil},
 		{name: "Nil Resolver", servers: nil, count: 1, want: nil},
-		{name: "Single", servers: []server{mockResolverA}, count: 1, want: mockResolverA},
-		{name: "Second", servers: []server{mockResolverA, mockResolverB}, count: 2, want: mockResolverB},
-		{name: "Wrap Around", servers: []server{mockResolverA, mockResolverB}, count: 3, want: mockResolverA},
+		{name: "Single", servers: []server{stubServerA}, count: 1, want: stubServerA},
+		{name: "Second", servers: []server{stubServerA, stubServerB}, count: 2, want: stubServerB},
+		{name: "Wrap Around", servers: []server{stubServerA, stubServerB}, count: 3, want: stubServerA},
 	}
 
 	for _, test := range testTable {
 		t.Run(test.name, func(t *testing.T) {
-			list := newRoundRobinList(test.servers)
+			list := newRoundRobinBalancer(test.servers)
 
 			var got server
 			for i := 0; i < test.count; i++ {
