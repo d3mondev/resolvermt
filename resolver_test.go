@@ -44,31 +44,31 @@ func TestResolve(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRequest := NewMockrequest(ctrl)
+			mockSender := NewMocksender(ctrl)
 			mockServer := newRateLimitedServer("8.8.8.8", 10)
 			mockBalancer := NewMockbalancer(ctrl)
-			mockParser := NewMockparser(ctrl)
+			mockMessageParser := NewMockmessageParser(ctrl)
 			mockNewSender := func(query string, rrtype RRtype) sender {
-				return mockRequest
+				return mockSender
 			}
 
 			// Send should return errors up until the number of retries has been reached
 			for i := 0; i < test.errors && i < test.retries; i++ {
 				mockBalancer.EXPECT().Next().Return(mockServer)
-				mockRequest.EXPECT().Send(gomock.Any()).Return(test.msg, time.Duration(0), errors.New("error"))
+				mockSender.EXPECT().Send(gomock.Any()).Return(test.msg, time.Duration(0), errors.New("error"))
 			}
 
 			// DNS request successful
 			if test.retries > test.errors {
 				mockBalancer.EXPECT().Next().Return(mockServer)
-				mockRequest.EXPECT().Send(gomock.Any()).Return(test.msg, time.Duration(0), nil)
+				mockSender.EXPECT().Send(gomock.Any()).Return(test.msg, time.Duration(0), nil)
 
 				if test.msg != mockMsgErr {
-					mockParser.EXPECT().Parse("test", mockMsg).Return([]Record{{Question: "test", Type: TypeA, Answer: "127.0.0.1"}})
+					mockMessageParser.EXPECT().Parse("test", mockMsg).Return([]Record{{Question: "test", Type: TypeA, Answer: "127.0.0.1"}})
 				}
 			}
 
-			resolver := newResolver(test.retries, mockNewSender, mockBalancer, mockParser)
+			resolver := newResolver(test.retries, mockNewSender, mockBalancer, mockMessageParser)
 			channel := make(chan []Record, 10)
 			resolver.Resolve("test", TypeA, channel)
 			got := <-channel
