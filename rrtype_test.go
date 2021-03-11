@@ -1,24 +1,23 @@
-package multidns_test
+package fastdns
 
 import (
 	"testing"
 
-	"github.com/d3mondev/multidns"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRRTypeString(t *testing.T) {
 	testTable := []struct {
 		name   string
-		rrtype multidns.RRtype
+		rrtype RRtype
 		want   string
 	}{
-		{name: "A", rrtype: multidns.TypeA, want: "A"},
-		{name: "AAAA", rrtype: multidns.TypeAAAA, want: "AAAA"},
-		{name: "CNAME", rrtype: multidns.TypeCNAME, want: "CNAME"},
-		{name: "TXT", rrtype: multidns.TypeTXT, want: "TXT"},
-		{name: "MX", rrtype: multidns.TypeMX, want: "MX"},
-		{name: "NS", rrtype: multidns.TypeNS, want: "NS"},
+		{name: "A", rrtype: TypeA, want: "A"},
+		{name: "AAAA", rrtype: TypeAAAA, want: "AAAA"},
+		{name: "CNAME", rrtype: TypeCNAME, want: "CNAME"},
+		{name: "TXT", rrtype: TypeTXT, want: "TXT"},
+		{name: "MX", rrtype: TypeMX, want: "MX"},
+		{name: "NS", rrtype: TypeNS, want: "NS"},
 	}
 
 	for _, test := range testTable {

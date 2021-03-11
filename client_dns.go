@@ -1,4 +1,4 @@
-package multidns
+package fastdns
 
 type clientDNS struct {
 	resolver       Resolver

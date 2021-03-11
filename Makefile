@@ -1,5 +1,5 @@
-PROJECT_NAME := "multidns"
-PKG := "github.com/d3mondev/multidns"
+PROJECT_NAME := "fastdns"
+PKG := "github.com/d3mondev/fastdns"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 
 .PHONY: all lint dep test race msan dep build mocks clean help

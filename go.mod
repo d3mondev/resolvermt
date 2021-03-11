@@ -1,4 +1,4 @@
-module github.com/d3mondev/multidns
+module github.com/d3mondev/fastdns
 
 go 1.16
 

@@ -1,9 +1,9 @@
-package multidns_test
+package fastdns_test
 
 import (
 	"fmt"
 
-	"github.com/d3mondev/multidns"
+	"github.com/d3mondev/fastdns"
 )
 
 func Example() {
@@ -26,9 +26,9 @@ func Example() {
 		"wordpress.org",
 	}
 
-	client := multidns.New(resolvers, 3, 10, 5)
+	client := fastdns.New(resolvers, 3, 10, 5)
 
-	results := client.Resolve(domains, multidns.TypeA)
+	results := client.Resolve(domains, fastdns.TypeA)
 
 	for _, record := range results {
 		fmt.Printf("%s contains %s record %s\n", record.Question, record.Type, record.Answer)

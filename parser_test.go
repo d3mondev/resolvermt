@@ -1,4 +1,4 @@
-package multidns
+package fastdns
 
 import (
 	"net"

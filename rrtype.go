@@ -1,4 +1,4 @@
-package multidns
+package fastdns
 
 import "github.com/miekg/dns"
 
