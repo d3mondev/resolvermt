@@ -22,6 +22,7 @@ code_coverage:
 lint_code:
   stage: test
   script:
+    - go get github.com/golang/lint/golint
     - make lint
 
 build:
