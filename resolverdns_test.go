@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 )
@@ -78,9 +77,6 @@ func TestResolve(t *testing.T) {
 
 	for _, test := range testTable {
 		t.Run(test.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
 			stubMessageParser := &stubParser{}
 			spyBalancer := &spyBalancer{server: newRateLimitedServer("8.8.8.8", 10)}
 			fakeSender := &fakeSender{errors: test.errors, msg: test.msg}

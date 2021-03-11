@@ -9,7 +9,7 @@ all: build
 lint: ## Lint the files
 	@golint -set_exit_status ${PKG_LIST}
 
-test: ## Run unittests
+test: ## Run unit tests
 	@go test -cover -v ${PKG_LIST}
 
 race: dep ## Run data race detector
@@ -23,9 +23,6 @@ dep: ## Get the dependencies
 
 build: dep ## Build the binary file
 	@go build -v $(PKG)
-
-mocks:
-	@mockgen -source client.go -destination mocks/client.go
 
 clean: ## Remove previous build
 	@rm -f $(PROJECT_NAME)

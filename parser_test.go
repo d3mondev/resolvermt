@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func mockRR() map[string]dns.RR {
+func stubRR() map[string]dns.RR {
 	records := make(map[string]dns.RR)
 
 	A := &dns.A{}
@@ -44,7 +44,7 @@ func mockRR() map[string]dns.RR {
 	return records
 }
 
-func mockRecords() map[string]Record {
+func stubRecords() map[string]Record {
 	records := make(map[string]Record)
 
 	A := Record{}
@@ -86,8 +86,8 @@ func mockRecords() map[string]Record {
 }
 
 func TestParse(t *testing.T) {
-	RR := mockRR()
-	records := mockRecords()
+	RR := stubRR()
+	records := stubRecords()
 
 	testTable := []struct {
 		name   string
