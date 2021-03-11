@@ -113,7 +113,7 @@ func TestClientResolve(t *testing.T) {
 func TestClientResolveLarge(t *testing.T) {
 	const iterations int = 32768
 
-	resolver := &stubResolver{sleep: time.Duration(10 * time.Microsecond), records: []Record{{Question: "foo.bar", Type: TypeA, Answer: "127.0.0.1"}}}
+	resolver := &stubResolver{sleep: time.Duration(0), records: []Record{{Question: "foo.bar", Type: TypeA, Answer: "127.0.0.1"}}}
 	client := newClientDNS(resolver, 10)
 
 	list := make([]string, iterations)

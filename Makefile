@@ -10,7 +10,7 @@ lint: ## Lint the files
 	@golint -set_exit_status ${PKG_LIST}
 
 test: ## Run unit tests
-	@go test -cover -v ${PKG_LIST}
+	@go test -short -cover -v -count=1 ${PKG_LIST}
 
 race: dep ## Run data race detector
 	@go test -race ${PKG_LIST}
