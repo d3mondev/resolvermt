@@ -1,38 +1,73 @@
 package multidns
 
 import (
-	"strings"
+	"time"
 
-	"go.uber.org/ratelimit"
+	"github.com/miekg/dns"
 )
 
-type resolver interface {
-	Get() string
+type resolver struct {
+	serverBalancer balancer
+	newSender      newSenderFunc
+	parser         messageParser
+
+	retryCount int
 }
 
-func newResolver(ipAddrPort string, queriesPerSecond int) resolver {
-	return newResolverRateLimited(ipAddrPort, queriesPerSecond)
+type balancer interface {
+	Next() server
 }
 
-type resolverRateLimited struct {
-	ipAddrPort string
-	limiter    ratelimit.Limiter
+type newSenderFunc func(query string, rrtype RRtype) sender
+
+type sender interface {
+	Send(resolver string) (r *dns.Msg, rtt time.Duration, err error)
 }
 
-func newResolverRateLimited(ipAddrPort string, queriesPerSecond int) resolver {
-	if !strings.Contains(ipAddrPort, ":") {
-		ipAddrPort += ":53"
+type messageParser interface {
+	Parse(query string, msg *dns.Msg) []Record
+}
+
+func newResolver(retryCount int, newSender newSenderFunc, serverBalancer balancer, parser messageParser) *resolver {
+	return &resolver{
+		serverBalancer: serverBalancer,
+		newSender:      newSender,
+		parser:         parser,
+		retryCount:     retryCount,
+	}
+}
+
+func (s *resolver) Resolve(query string, rrtype RRtype, channel chan []Record) {
+	// Make sure we send the records whenever we exit the function
+	records := []Record{}
+	defer func() {
+		channel <- records
+	}()
+
+	sender := s.newSender(query, rrtype)
+
+	var err error
+	var msg *dns.Msg
+
+	// Send the request to a server, retrying on error
+	for i := 0; i < s.retryCount; i++ {
+		server := s.serverBalancer.Next()
+		msg, _, err = sender.Send(server.Take())
+
+		if err == nil {
+			break
+		}
 	}
 
-	return &resolverRateLimited{
-		ipAddrPort: ipAddrPort,
-		limiter:    ratelimit.New(queriesPerSecond),
+	// Something went wrong with the request
+	if err != nil {
+		return
 	}
-}
 
-// Get blocks to respect the rate limit and returns the resolver's ip:port string
-func (s *resolverRateLimited) Get() string {
-	s.limiter.Take()
+	// Request was successful, but a valid error such as NXDOMAIN occured
+	if msg.Rcode != dns.RcodeSuccess {
+		return
+	}
 
-	return s.ipAddrPort
+	records = s.parser.Parse(query, msg)
 }

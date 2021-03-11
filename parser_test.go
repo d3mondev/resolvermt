@@ -95,13 +95,85 @@ func TestParse(t *testing.T) {
 		answer *dns.Msg
 		want   []Record
 	}{
-		{name: "Two Records", query: "foo.bar", answer: &dns.Msg{Answer: []dns.RR{RR["A"], RR["CNAME"]}}, want: []Record{records["A"], records["CNAME"]}},
-		{name: "AAAA", query: "foo.bar", answer: &dns.Msg{Answer: []dns.RR{RR["AAAA"]}}, want: []Record{records["AAAA"]}},
-		{name: "TXT", query: "foo.bar", answer: &dns.Msg{Answer: []dns.RR{RR["TXT"]}}, want: []Record{records["TXT1"], records["TXT2"]}},
-		{name: "MX", query: "foo.bar", answer: &dns.Msg{Answer: []dns.RR{RR["MX"]}}, want: []Record{records["MX"]}},
-		{name: "NS", query: "foo.bar", answer: &dns.Msg{Answer: []dns.RR{RR["NS"]}}, want: []Record{records["NS"]}},
-		{name: "Empty Answer", query: "foo.bar", answer: &dns.Msg{Answer: []dns.RR{}}, want: []Record{}},
-		{name: "Empty Query", query: "", answer: &dns.Msg{Answer: []dns.RR{RR["A"]}}, want: []Record{records["A"]}},
+		{
+			name:  "Two Records",
+			query: "foo.bar",
+			answer: &dns.Msg{
+				Answer: []dns.RR{
+					RR["A"],
+					RR["CNAME"],
+				},
+			},
+			want: []Record{
+				records["A"],
+				records["CNAME"],
+			},
+		},
+		{
+			name:  "AAAA",
+			query: "foo.bar",
+			answer: &dns.Msg{
+				Answer: []dns.RR{
+					RR["AAAA"],
+				},
+			},
+			want: []Record{
+				records["AAAA"],
+			},
+		},
+		{
+			name: "TXT", query: "foo.bar",
+			answer: &dns.Msg{Answer: []dns.RR{
+				RR["TXT"]}},
+			want: []Record{
+				records["TXT1"],
+				records["TXT2"],
+			},
+		},
+		{
+			name:  "MX",
+			query: "foo.bar",
+			answer: &dns.Msg{
+				Answer: []dns.RR{
+					RR["MX"],
+				},
+			},
+			want: []Record{
+				records["MX"],
+			},
+		},
+		{
+			name:  "NS",
+			query: "foo.bar",
+			answer: &dns.Msg{
+				Answer: []dns.RR{
+					RR["NS"],
+				},
+			},
+			want: []Record{
+				records["NS"],
+			},
+		},
+		{
+			name:  "Empty Answer",
+			query: "foo.bar",
+			answer: &dns.Msg{
+				Answer: []dns.RR{},
+			},
+			want: []Record{},
+		},
+		{
+			name:  "Empty Query",
+			query: "",
+			answer: &dns.Msg{
+				Answer: []dns.RR{
+					RR["A"],
+				},
+			},
+			want: []Record{
+				records["A"],
+			},
+		},
 	}
 
 	for _, test := range testTable {

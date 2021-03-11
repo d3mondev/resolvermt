@@ -4,80 +4,41 @@ import (
 	"time"
 )
 
-// Client interface
+// Client is used to send DNS requests to resolvers concurrently.
 type Client interface {
 	Resolve(domains []string, rrtype RRtype) []Record
 }
 
-// New creates a new concrete instance of Client
+// New returns a Client that will respect the retry count, queries per seconds
+// and a maximum number of concurrent queries that can happen at the same time.
 func New(resolvers []string, retryCount int, queriesPerSecond int, parallelCount int) Client {
-	resolverList := newResolverListRoundRobin(resolvers, queriesPerSecond)
+	items := make([]server, len(resolvers))
+	for i := range resolvers {
+		items[i] = newRateLimitedServer(resolvers[i], queriesPerSecond)
+	}
+	roundRobinList := newRoundRobinList(items)
+
 	parser := &msgParser{}
-	requestFactory := newRequestDNS
+	doer := newResolver(retryCount, realNewSender, roundRobinList, parser)
+	sleeper := &realSleeper{}
 
-	return newClientDNS(resolverList, requestFactory, parser, retryCount, parallelCount)
+	return newClientDNS(doer, sleeper, parallelCount)
 }
 
-type clientDNS struct {
-	resolvers      resolverList
-	requestFactory requestFactory
-	parser         parser
-
-	retryCount  int
-	workerCount int
+type doer interface {
+	Resolve(query string, rrtype RRtype, channel chan []Record)
 }
 
-func newClientDNS(resolvers resolverList, requestFactory requestFactory, parser parser, retryCount int, parallelCount int) Client {
-	client := clientDNS{
-		resolvers:      resolvers,
-		requestFactory: requestFactory,
-		parser:         parser,
-
-		retryCount:  retryCount,
-		workerCount: parallelCount,
-	}
-
-	return &client
+type sleeper interface {
+	Sleep(t time.Duration)
 }
 
-func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
-	index := 0
-	channel := make(chan []Record, s.workerCount)
-	activeRoutines := 0
-	records := []Record{}
+type realSleeper struct{}
 
-	for {
-		// Free up completed goroutines
-		for i := len(channel); i > 0; i-- {
-			records = append(records, <-channel...)
-			activeRoutines--
-		}
+func (s *realSleeper) Sleep(t time.Duration) {
+	time.Sleep(t)
+}
 
-		// Wait if too many routines are in flight
-		if activeRoutines >= s.workerCount {
-			time.Sleep(10 * time.Millisecond)
-			continue
-		}
-
-		// Get the next query
-		query := queries[index]
-		index++
-
-		// Start a new goroutine
-		activeRoutines++
-		go work(query, rrtype, channel, s.retryCount, s.requestFactory, s.resolvers, s.parser)
-
-		// Exit condition
-		if index >= len(queries) {
-			break
-		}
-	}
-
-	// Wait for all goroutines to finish
-	for i := activeRoutines; i > 0; i-- {
-		records = append(records, <-channel...)
-	}
-
-	// Work done
-	return records
+func realNewSender(query string, rrtype RRtype) sender {
+	return newRequestDNS(query, rrtype)
 }

@@ -2,7 +2,7 @@ package multidns
 
 import "github.com/miekg/dns"
 
-// RRtype resource record type
+// RRtype resource record type.
 type RRtype uint16
 
 const (

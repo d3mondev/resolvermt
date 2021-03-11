@@ -6,10 +6,6 @@ import (
 	"github.com/miekg/dns"
 )
 
-type parser interface {
-	Parse(query string, msg *dns.Msg) []Record
-}
-
 type msgParser struct{}
 
 func (s *msgParser) Parse(query string, msg *dns.Msg) []Record {
