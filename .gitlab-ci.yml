@@ -1,0 +1,30 @@
+image: golang:1.16
+
+stages:
+  - test
+  - build
+
+unit_tests:
+  stage: test
+  script:
+    - make test
+
+race_detector:
+  stage: test
+  script:
+    - make race
+
+code_coverage:
+  stage: test
+  script:
+    - make coverage
+
+lint_code:
+  stage: test
+  script:
+    - make lint
+
+build:
+  stage: build
+  script:
+    - make
