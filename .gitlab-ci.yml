@@ -14,11 +14,6 @@ race_detector:
   script:
     - make race
 
-code_coverage:
-  stage: test
-  script:
-    - make coverage
-
 lint_code:
   stage: test
   script:
