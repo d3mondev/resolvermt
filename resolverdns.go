@@ -28,10 +28,14 @@ type messageParser interface {
 
 type newSenderFunc func(query string, rrtype RRtype) sender
 
-func newResolverDNS(retryCount int, newSender newSenderFunc, serverBalancer balancer, parser messageParser) *resolverDNS {
+func defaultNewSender(query string, rrtype RRtype) sender {
+	return newRequestDNS(query, rrtype)
+}
+
+func newResolverDNS(retryCount int, serverBalancer balancer, parser messageParser) *resolverDNS {
 	return &resolverDNS{
 		serverBalancer: serverBalancer,
-		newSender:      newSender,
+		newSender:      defaultNewSender,
 		parser:         parser,
 		retryCount:     retryCount,
 	}

@@ -3,13 +3,13 @@ package multidns
 import "time"
 
 type clientDNS struct {
-	resolver resolver
-	sleeper  sleeper
+	resolver Resolver
+	sleeper  Sleeper
 
 	workerCount int
 }
 
-func newClientDNS(resolver resolver, sleeper sleeper, parallelCount int) *clientDNS {
+func newClientDNS(resolver Resolver, sleeper Sleeper, parallelCount int) *clientDNS {
 	client := clientDNS{
 		resolver: resolver,
 		sleeper:  sleeper,

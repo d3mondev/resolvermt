@@ -25,9 +25,3 @@ func TestRealSleeper(t *testing.T) {
 
 	assert.True(t, dur >= sleepFor)
 }
-
-func TestRealNewSender(t *testing.T) {
-	sender := realNewSender("test", TypeA)
-
-	assert.NotNil(t, sender)
-}

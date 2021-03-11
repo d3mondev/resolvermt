@@ -68,10 +68,18 @@ func TestResolve(t *testing.T) {
 				}
 			}
 
-			resolver := newResolverDNS(test.retries, mockNewSender, mockBalancer, mockMessageParser)
+			resolver := newResolverDNS(test.retries, mockBalancer, mockMessageParser)
+			resolver.newSender = mockNewSender
+
 			got := resolver.Resolve("test", TypeA)
 
 			assert.EqualValues(t, test.want, got, test.name)
 		})
 	}
+}
+
+func TestDefaultNewSender(t *testing.T) {
+	sender := defaultNewSender("test", TypeA)
+
+	assert.NotNil(t, sender)
 }

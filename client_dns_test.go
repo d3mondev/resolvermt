@@ -38,7 +38,7 @@ func TestClientResolve(t *testing.T) {
 		concurrent int
 		domains    []string
 		rrtype     RRtype
-		sleeper    sleeper
+		sleeper    Sleeper
 		wantSleep  bool
 		want       []Record
 	}{

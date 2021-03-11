@@ -26,7 +26,7 @@ func New(resolvers []string, retryCount int, queriesPerSecond int, parallelCount
 	roundRobinList := newRoundRobinList(items)
 
 	parser := &msgParser{}
-	resolver := newResolverDNS(retryCount, realNewSender, roundRobinList, parser)
+	resolver := newResolverDNS(retryCount, roundRobinList, parser)
 	sleeper := &defaultSleeper{}
 
 	return newClientDNS(resolver, sleeper, parallelCount)
@@ -50,8 +50,4 @@ type defaultSleeper struct{}
 
 func (s *defaultSleeper) Sleep(t time.Duration) {
 	time.Sleep(t)
-}
-
-func realNewSender(query string, rrtype RRtype) sender {
-	return newRequestDNS(query, rrtype)
 }
