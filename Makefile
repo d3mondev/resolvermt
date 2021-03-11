@@ -29,7 +29,7 @@ build: dep ## Build the binary file
 
 mocks:
 	@mockgen -source client.go -destination mocks/client.go
-	@mockgen -source resolver.go -destination resolver_mock_test.go -package multidns
+	@mockgen -source resolverdns.go -destination resolverdns_mock_test.go -package multidns
 	@mockgen -destination ratelimit_mock_test.go -package multidns go.uber.org/ratelimit Limiter
 
 clean: ## Remove previous build

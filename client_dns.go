@@ -3,16 +3,16 @@ package multidns
 import "time"
 
 type clientDNS struct {
-	doer    doer
-	sleeper sleeper
+	resolver resolver
+	sleeper  sleeper
 
 	workerCount int
 }
 
-func newClientDNS(doer doer, sleeper sleeper, parallelCount int) *clientDNS {
+func newClientDNS(resolver resolver, sleeper sleeper, parallelCount int) *clientDNS {
 	client := clientDNS{
-		doer:    doer,
-		sleeper: sleeper,
+		resolver: resolver,
+		sleeper:  sleeper,
 
 		workerCount: parallelCount,
 	}
@@ -45,7 +45,10 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 
 		// Start a new goroutine
 		activeRoutines++
-		go s.doer.Resolve(query, rrtype, channel)
+		go func(query string, rrtype RRtype, channel chan []Record) {
+			records := s.resolver.Resolve(query, rrtype)
+			channel <- records
+		}(query, rrtype, channel)
 
 		// Exit condition
 		if index >= len(queries) {

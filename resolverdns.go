@@ -6,7 +6,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-type resolver struct {
+type resolverDNS struct {
 	serverBalancer balancer
 	newSender      newSenderFunc
 	parser         messageParser
@@ -18,8 +18,6 @@ type balancer interface {
 	Next() server
 }
 
-type newSenderFunc func(query string, rrtype RRtype) sender
-
 type sender interface {
 	Send(resolver string) (r *dns.Msg, rtt time.Duration, err error)
 }
@@ -28,8 +26,10 @@ type messageParser interface {
 	Parse(query string, msg *dns.Msg) []Record
 }
 
-func newResolver(retryCount int, newSender newSenderFunc, serverBalancer balancer, parser messageParser) *resolver {
-	return &resolver{
+type newSenderFunc func(query string, rrtype RRtype) sender
+
+func newResolverDNS(retryCount int, newSender newSenderFunc, serverBalancer balancer, parser messageParser) *resolverDNS {
+	return &resolverDNS{
 		serverBalancer: serverBalancer,
 		newSender:      newSender,
 		parser:         parser,
@@ -37,13 +37,8 @@ func newResolver(retryCount int, newSender newSenderFunc, serverBalancer balance
 	}
 }
 
-func (s *resolver) Resolve(query string, rrtype RRtype, channel chan []Record) {
-	// Make sure we send the records whenever we exit the function
+func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 	records := []Record{}
-	defer func() {
-		channel <- records
-	}()
-
 	sender := s.newSender(query, rrtype)
 
 	var err error
@@ -61,13 +56,15 @@ func (s *resolver) Resolve(query string, rrtype RRtype, channel chan []Record) {
 
 	// Something went wrong with the request
 	if err != nil {
-		return
+		return records
 	}
 
 	// Request was successful, but a valid error such as NXDOMAIN occured
 	if msg.Rcode != dns.RcodeSuccess {
-		return
+		return records
 	}
 
 	records = s.parser.Parse(query, msg)
+
+	return records
 }

@@ -15,13 +15,13 @@ type mockDoer struct {
 	index   int32
 }
 
-func (s *mockDoer) Resolve(query string, rrtype RRtype, channel chan []Record) {
+func (s *mockDoer) Resolve(query string, rrtype RRtype) []Record {
 	nextIndex := atomic.AddInt32(&s.index, 1) - 1
 	record := s.records[nextIndex]
 
 	time.Sleep(time.Duration(time.Millisecond * 10))
 
-	channel <- []Record{record}
+	return []Record{record}
 }
 
 type mockSleeper struct {

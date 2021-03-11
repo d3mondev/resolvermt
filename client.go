@@ -26,23 +26,29 @@ func New(resolvers []string, retryCount int, queriesPerSecond int, parallelCount
 	roundRobinList := newRoundRobinList(items)
 
 	parser := &msgParser{}
-	doer := newResolver(retryCount, realNewSender, roundRobinList, parser)
-	sleeper := &realSleeper{}
+	resolver := newResolverDNS(retryCount, realNewSender, roundRobinList, parser)
+	sleeper := &defaultSleeper{}
 
-	return newClientDNS(doer, sleeper, parallelCount)
+	return newClientDNS(resolver, sleeper, parallelCount)
 }
 
-type doer interface {
-	Resolve(query string, rrtype RRtype, channel chan []Record)
+// Resolver is used to resolve a DNS query and return a list of records.
+// The process is responsible for selecting which DNS servers to use and
+// rate-limiting.
+type Resolver interface {
+	Resolve(query string, rrtype RRtype) []Record
 }
 
-type sleeper interface {
+// Sleeper defines the behavior of the client when maximum concurrency is reached.
+// Typically, the client will sleep for a number of milliseconds before processing
+// more requests in order to let the Resolver finish a request.
+type Sleeper interface {
 	Sleep(t time.Duration)
 }
 
-type realSleeper struct{}
+type defaultSleeper struct{}
 
-func (s *realSleeper) Sleep(t time.Duration) {
+func (s *defaultSleeper) Sleep(t time.Duration) {
 	time.Sleep(t)
 }
 

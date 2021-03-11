@@ -16,7 +16,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestRealSleeper(t *testing.T) {
-	sleeper := realSleeper{}
+	sleeper := defaultSleeper{}
 	sleepFor := 1 * time.Millisecond
 
 	start := time.Now()

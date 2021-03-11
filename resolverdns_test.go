@@ -68,10 +68,8 @@ func TestResolve(t *testing.T) {
 				}
 			}
 
-			resolver := newResolver(test.retries, mockNewSender, mockBalancer, mockMessageParser)
-			channel := make(chan []Record, 10)
-			resolver.Resolve("test", TypeA, channel)
-			got := <-channel
+			resolver := newResolverDNS(test.retries, mockNewSender, mockBalancer, mockMessageParser)
+			got := resolver.Resolve("test", TypeA)
 
 			assert.EqualValues(t, test.want, got, test.name)
 		})

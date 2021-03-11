@@ -1,11 +1,23 @@
 package multidns
 
 import (
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
+
+type spyLimiter struct {
+	calls int32
+}
+
+func (s *spyLimiter) Take() time.Time {
+	atomic.AddInt32(&s.calls, 1)
+
+	return time.Time{}
+}
 
 func TestRateLimitedServerTake(t *testing.T) {
 	testTable := []struct {
@@ -23,14 +35,14 @@ func TestRateLimitedServerTake(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			limiter := NewMockLimiter(ctrl)
-			limiter.EXPECT().Take()
+			limiter := &spyLimiter{}
 
 			server := newRateLimitedServer(test.ipAddrPort, 10)
 			server.limiter = limiter
 
 			got := server.Take()
 			assert.Equal(t, test.want, got)
+			assert.Equal(t, 1, int(limiter.calls))
 		})
 	}
 }

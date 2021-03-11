@@ -49,39 +49,41 @@ func (mr *MockClientMockRecorder) Resolve(domains, rrtype interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockClient)(nil).Resolve), domains, rrtype)
 }
 
-// Mockdoer is a mock of doer interface.
-type Mockdoer struct {
+// Mockresolver is a mock of resolver interface.
+type Mockresolver struct {
 	ctrl     *gomock.Controller
-	recorder *MockdoerMockRecorder
+	recorder *MockresolverMockRecorder
 }
 
-// MockdoerMockRecorder is the mock recorder for Mockdoer.
-type MockdoerMockRecorder struct {
-	mock *Mockdoer
+// MockresolverMockRecorder is the mock recorder for Mockresolver.
+type MockresolverMockRecorder struct {
+	mock *Mockresolver
 }
 
-// NewMockdoer creates a new mock instance.
-func NewMockdoer(ctrl *gomock.Controller) *Mockdoer {
-	mock := &Mockdoer{ctrl: ctrl}
-	mock.recorder = &MockdoerMockRecorder{mock}
+// NewMockresolver creates a new mock instance.
+func NewMockresolver(ctrl *gomock.Controller) *Mockresolver {
+	mock := &Mockresolver{ctrl: ctrl}
+	mock.recorder = &MockresolverMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockdoer) EXPECT() *MockdoerMockRecorder {
+func (m *Mockresolver) EXPECT() *MockresolverMockRecorder {
 	return m.recorder
 }
 
 // Resolve mocks base method.
-func (m *Mockdoer) Resolve(query string, rrtype multidns.RRtype, channel chan []multidns.Record) {
+func (m *Mockresolver) Resolve(query string, rrtype multidns.RRtype) []multidns.Record {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Resolve", query, rrtype, channel)
+	ret := m.ctrl.Call(m, "Resolve", query, rrtype)
+	ret0, _ := ret[0].([]multidns.Record)
+	return ret0
 }
 
 // Resolve indicates an expected call of Resolve.
-func (mr *MockdoerMockRecorder) Resolve(query, rrtype, channel interface{}) *gomock.Call {
+func (mr *MockresolverMockRecorder) Resolve(query, rrtype interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*Mockdoer)(nil).Resolve), query, rrtype, channel)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*Mockresolver)(nil).Resolve), query, rrtype)
 }
 
 // Mocksleeper is a mock of sleeper interface.
