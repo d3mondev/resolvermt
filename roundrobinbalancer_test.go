@@ -14,7 +14,7 @@ func (s *stubServer) Take() string {
 	return s.value
 }
 
-func TestRoundRobinListNext(t *testing.T) {
+func TestRoundRobinBalancerNext(t *testing.T) {
 	stubServerA := &stubServer{"8.8.8.8:53"}
 	stubServerB := &stubServer{"8.8.4.4:53"}
 

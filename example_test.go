@@ -31,6 +31,6 @@ func Example() {
 	results := client.Resolve(domains, fastdns.TypeA)
 
 	for _, record := range results {
-		fmt.Printf("%s contains %s record %s\n", record.Question, record.Type, record.Answer)
+		fmt.Printf("%s %s %s\n", record.Question, record.Type, record.Answer)
 	}
 }
