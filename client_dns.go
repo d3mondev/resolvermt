@@ -1,7 +1,7 @@
 package fastdns
 
 import (
-	"time"
+	"context"
 )
 
 type clientDNS struct {
@@ -19,52 +19,54 @@ func newClientDNS(resolver Resolver, maxConcurrency int) *clientDNS {
 }
 
 func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
-	// Limit the number of concurrent routines by using a channel
-	activeChan := make(chan bool, s.maxConcurrency)
+	queryChan := make(chan string, s.maxConcurrency)
+	resultChan := make(chan []Record, s.maxConcurrency)
 
-	// The result channel must have an extra element to prevent a deadlock
-	// that happens when a goroutine tries to push its results in a channel that
-	// is full while the main thread is waiting for the goroutines to finish
-	resultChan := make(chan []Record, s.maxConcurrency+1)
+	queryIndex := 0
+	resultCount := 0
 
-	index := 0
 	records := []Record{}
 
+	// Start goroutines
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for i := 0; i < s.maxConcurrency; i++ {
+		go func(ctx context.Context, queryChan chan string, resultChan chan []Record, rrtype RRtype) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case query := <-queryChan:
+					records := s.resolver.Resolve(query, rrtype)
+					resultChan <- records
+				}
+			}
+		}(ctx, queryChan, resultChan, rrtype)
+	}
+
+	// Send work to goroutines
 	for {
 		// Process completed results
 		for i := len(resultChan); i > 0; i-- {
 			records = append(records, <-resultChan...)
+			resultCount++
 		}
 
-		// Get the next query
-		query := queries[index]
-		index++
-
-		// Start a new goroutine
-		activeChan <- true
-
-		go func(query string, rrtype RRtype, activeChan chan bool, resultChan chan []Record) {
-			records := s.resolver.Resolve(query, rrtype)
-			resultChan <- records
-
-			// Free up goroutine
-			<-activeChan
-		}(query, rrtype, activeChan, resultChan)
+		// Send the next query
+		queryChan <- queries[queryIndex]
+		queryIndex++
 
 		// Exit condition
-		if index >= len(queries) {
+		if queryIndex >= len(queries) {
 			break
 		}
 	}
 
-	// Wait for routines to finish
-	for len(activeChan) > 0 {
-		time.Sleep(1 * time.Millisecond)
-	}
-
-	// Process completed results
-	for i := len(resultChan); i > 0; i-- {
+	// Process remaining results
+	for resultCount < len(queries) {
 		records = append(records, <-resultChan...)
+		resultCount++
 	}
 
 	// Work done

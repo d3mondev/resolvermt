@@ -1,28 +1,29 @@
 PROJECT_NAME := "fastdns"
-PKG := "github.com/d3mondev/fastdns"
-PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 
-.PHONY: all lint dep test race msan dep build mocks clean help
+.PHONY: all lint dep test bench race msan dep build mocks clean help
 
 all: build
 
 lint: ## Lint the files
-	@golint -set_exit_status ${PKG_LIST}
+	@golint -set_exit_status ./...
 
 test: ## Run unit tests
-	@go test -short -cover -v -count=1 ${PKG_LIST}
+	@go test -short -cover -v -count=1 ./...
+
+bench: ## Run benchmark
+	@go test -bench ./...
 
 race: dep ## Run data race detector
-	@go test -race ${PKG_LIST}
+	@go test -race ./...
 
 msan: dep ## Run memory sanitizer
-	@go test -msan ${PKG_LIST}
+	@go test -msan ./...
 
 dep: ## Get the dependencies
 	@go get -v -d ./...
 
 build: dep ## Build the binary file
-	@go build -v $(PKG)
+	@go build -v ./...
 
 clean: ## Remove previous build
 	@rm -f $(PROJECT_NAME)
