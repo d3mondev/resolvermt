@@ -1,14 +1,11 @@
 package fastdns
 
 import (
-	"time"
-
 	"github.com/miekg/dns"
 )
 
 type resolverDNS struct {
 	serverBalancer balancer
-	newSender      newSenderFunc
 	parser         messageParser
 
 	retryCount int
@@ -18,24 +15,13 @@ type balancer interface {
 	Next() server
 }
 
-type sender interface {
-	Send(resolver string) (r *dns.Msg, rtt time.Duration, err error)
-}
-
 type messageParser interface {
 	Parse(query string, msg *dns.Msg) []Record
-}
-
-type newSenderFunc func(query string, rrtype RRtype) sender
-
-func defaultNewSender(query string, rrtype RRtype) sender {
-	return newRequestDNS(query, rrtype)
 }
 
 func newResolverDNS(retryCount int, serverBalancer balancer, parser messageParser) *resolverDNS {
 	return &resolverDNS{
 		serverBalancer: serverBalancer,
-		newSender:      defaultNewSender,
 		parser:         parser,
 		retryCount:     retryCount,
 	}
@@ -43,7 +29,6 @@ func newResolverDNS(retryCount int, serverBalancer balancer, parser messageParse
 
 func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 	records := []Record{}
-	sender := s.newSender(query, rrtype)
 
 	var err error
 	var msg *dns.Msg
@@ -51,7 +36,7 @@ func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 	// Send the request to a server, retrying on error
 	for i := 0; i < s.retryCount; i++ {
 		server := s.serverBalancer.Next()
-		msg, _, err = sender.Send(server.Take())
+		msg, _, err = server.Query(query, rrtype)
 
 		if err == nil {
 			break

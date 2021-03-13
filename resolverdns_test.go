@@ -33,12 +33,12 @@ func (s *stubParser) Parse(query string, msg *dns.Msg) []Record {
 	}
 }
 
-type fakeSender struct {
+type fakeServer struct {
 	errors int
 	msg    *dns.Msg
 }
 
-func (s *fakeSender) Send(server string) (*dns.Msg, time.Duration, error) {
+func (s *fakeServer) Query(query string, ttype RRtype) (*dns.Msg, time.Duration, error) {
 	if s.errors > 0 {
 		s.errors--
 		return nil, time.Duration(0), errors.New("error")
@@ -78,14 +78,10 @@ func TestResolve(t *testing.T) {
 	for _, test := range testTable {
 		t.Run(test.name, func(t *testing.T) {
 			stubMessageParser := &stubParser{}
-			spyBalancer := &spyBalancer{server: newRateLimitedServer("8.8.8.8", 10)}
-			fakeSender := &fakeSender{errors: test.errors, msg: test.msg}
-			fakeNewSender := func(query string, rrtype RRtype) sender {
-				return fakeSender
-			}
+			fakeServer := &fakeServer{errors: test.errors, msg: test.msg}
+			spyBalancer := &spyBalancer{server: fakeServer}
 
 			resolver := newResolverDNS(test.retries, spyBalancer, stubMessageParser)
-			resolver.newSender = fakeNewSender
 
 			got := resolver.Resolve("test", TypeA)
 
@@ -99,10 +95,4 @@ func TestResolve(t *testing.T) {
 			assert.EqualValues(t, wantedBalancerCalls, spyBalancer.calls)
 		})
 	}
-}
-
-func TestDefaultNewSender(t *testing.T) {
-	sender := defaultNewSender("test", TypeA)
-
-	assert.NotNil(t, sender)
 }

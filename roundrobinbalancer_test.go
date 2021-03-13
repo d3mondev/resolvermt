@@ -2,7 +2,9 @@ package fastdns
 
 import (
 	"testing"
+	"time"
 
+	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -10,8 +12,8 @@ type stubServer struct {
 	value string
 }
 
-func (s *stubServer) Take() string {
-	return s.value
+func (s *stubServer) Query(query string, rrtype RRtype) (*dns.Msg, time.Duration, error) {
+	return &dns.Msg{}, time.Duration(0), nil
 }
 
 func TestRoundRobinBalancerNext(t *testing.T) {

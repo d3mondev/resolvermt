@@ -1,7 +1,6 @@
 package fastdns
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -9,36 +8,23 @@ import (
 )
 
 type spyLimiter struct {
-	calls int32
+	calls int
 }
 
 func (s *spyLimiter) Take() time.Time {
-	atomic.AddInt32(&s.calls, 1)
+	s.calls++
 
 	return time.Time{}
 }
 
-func TestRateLimitedServerTake(t *testing.T) {
-	testTable := []struct {
-		name       string
-		ipAddrPort string
-		want       string
-	}{
-		{name: "IP Without Port", ipAddrPort: "8.8.8.8", want: "8.8.8.8:53"},
-		{name: "IP With Port", ipAddrPort: "8.8.8.8:53", want: "8.8.8.8:53"},
-		{name: "Empty IP", ipAddrPort: "", want: ":53"},
-	}
+func TestRateLimitedServerSend(t *testing.T) {
+	limiter := &spyLimiter{}
 
-	for _, test := range testTable {
-		t.Run(test.name, func(t *testing.T) {
-			limiter := &spyLimiter{}
+	server := newRateLimitedServer("8.8.8.8:53", 10)
+	server.limiter = limiter
 
-			server := newRateLimitedServer(test.ipAddrPort, 10)
-			server.limiter = limiter
+	_, _, gotErr := server.Query("www.google.com", TypeA)
 
-			got := server.Take()
-			assert.Equal(t, test.want, got)
-			assert.Equal(t, 1, int(limiter.calls))
-		})
-	}
+	assert.Equal(t, 1, limiter.calls)
+	assert.Nil(t, gotErr)
 }
