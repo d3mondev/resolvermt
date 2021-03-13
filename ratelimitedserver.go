@@ -52,7 +52,7 @@ func newRateLimitedServer(ipAddrPort string, queriesPerSecond int) *rateLimitedS
 
 func (s *rateLimitedServer) Query(query string, rrtype RRtype) (*dns.Msg, time.Duration, error) {
 	msg := new(dns.Msg)
-	msg.Id = s.newId()
+	msg.Id = s.newID()
 	msg.RecursionDesired = true
 	msg.Question = make([]dns.Question, 1)
 	msg.Question[0] = dns.Question{Name: query + ".", Qtype: uint16(rrtype), Qclass: dns.ClassINET}
@@ -62,7 +62,7 @@ func (s *rateLimitedServer) Query(query string, rrtype RRtype) (*dns.Msg, time.D
 	return s.client.Exchange(msg, s.ipAddrPort)
 }
 
-func (s *rateLimitedServer) newId() uint16 {
+func (s *rateLimitedServer) newID() uint16 {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
