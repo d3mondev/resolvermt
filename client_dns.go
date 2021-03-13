@@ -1,9 +1,5 @@
 package fastdns
 
-import (
-	"context"
-)
-
 type clientDNS struct {
 	resolver       Resolver
 	maxConcurrency int
@@ -31,26 +27,22 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 	records := []Record{}
 
 	// Start goroutines
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	for i := 0; i < s.maxConcurrency; i++ {
-		go func(ctx context.Context, queryChan chan []string, resultChan chan []Record, rrtype RRtype) {
+		go func(queryChan chan []string, resultChan chan []Record, rrtype RRtype) {
 			for {
-				select {
-				case <-ctx.Done():
+				batch, open := <-queryChan
+
+				if !open {
 					return
-				case batch := <-queryChan:
-					var results []Record
-
-					for _, query := range batch {
-						results = append(results, s.resolver.Resolve(query, rrtype)...)
-					}
-
-					resultChan <- results
 				}
+
+				var results []Record
+				for _, query := range batch {
+					results = append(results, s.resolver.Resolve(query, rrtype)...)
+				}
+				resultChan <- results
 			}
-		}(ctx, queryChan, resultChan, rrtype)
+		}(queryChan, resultChan, rrtype)
 	}
 
 	// Send work to goroutines
@@ -82,6 +74,8 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 	}
 
 	// Work done
+	close(queryChan)
+
 	return records
 }
 
