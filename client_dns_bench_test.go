@@ -2,7 +2,6 @@ package fastdns
 
 import (
 	"fmt"
-	"runtime"
 	"testing"
 	"time"
 )
@@ -10,7 +9,6 @@ import (
 func BenchmarkClientDNS(b *testing.B) {
 	for _, queries := range []int{1, 16, 256, 4096, 65536} {
 		for _, routines := range []int{1, 4, 16, 64, 256, 1024} {
-			runtime.GOMAXPROCS(routines)
 			runner(b, queries, routines)
 		}
 	}
