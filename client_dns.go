@@ -15,31 +15,27 @@ func newClientDNS(resolver Resolver, maxConcurrency int) *clientDNS {
 }
 
 func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
-	queryChan := make(chan []string, s.maxConcurrency)
+	queryChan := make(chan string, s.maxConcurrency)
 	resultChan := make(chan []Record, s.maxConcurrency)
 
 	queryCount := len(queries)
 	queryIndex := 0
 
-	batchSent := 0
-	batchReceived := 0
+	received := 0
 
 	records := []Record{}
 
 	// Start goroutines
 	for i := 0; i < s.maxConcurrency; i++ {
-		go func(queryChan chan []string, resultChan chan []Record, rrtype RRtype) {
+		go func(queryChan chan string, resultChan chan []Record, rrtype RRtype) {
 			for {
-				batch, open := <-queryChan
+				query, open := <-queryChan
 
 				if !open {
 					return
 				}
 
-				var results []Record
-				for _, query := range batch {
-					results = append(results, s.resolver.Resolve(query, rrtype)...)
-				}
+				results := s.resolver.Resolve(query, rrtype)
 				resultChan <- results
 			}
 		}(queryChan, resultChan, rrtype)
@@ -50,16 +46,12 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 		// Process completed results
 		for i := len(resultChan); i > 0; i-- {
 			records = append(records, <-resultChan...)
-			batchReceived++
+			received++
 		}
 
-		// Send the next queries
-		endIndex := queryIndex + batchSize(queryCount-queryIndex, s.maxConcurrency)
-		slice := queries[queryIndex:endIndex]
-		queryIndex = endIndex
-
-		queryChan <- slice
-		batchSent++
+		// Send the next query
+		queryChan <- queries[queryIndex]
+		queryIndex++
 
 		// Exit condition
 		if queryIndex >= queryCount {
@@ -68,36 +60,13 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 	}
 
 	// Process remaining results
-	for batchReceived < batchSent {
+	for received < queryCount {
 		records = append(records, <-resultChan...)
-		batchReceived++
+		received++
 	}
 
 	// Work done
 	close(queryChan)
 
 	return records
-}
-
-func batchSize(count int, threads int) int {
-	batchsize := max(count/threads/2, 1)
-	batchsize = min(batchsize, 100)
-
-	return batchsize
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-
-	return b
 }
