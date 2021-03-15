@@ -23,10 +23,10 @@ func (s *spyBalancer) Next() server {
 
 type stubParser struct{}
 
-func (s *stubParser) Parse(query string, msg *dns.Msg) []Record {
+func (s *stubParser) Parse(msg *dns.Msg) []Record {
 	return []Record{
 		{
-			Question: "test",
+			Question: msg.Question[0].Name,
 			Type:     TypeA,
 			Answer:   "127.0.0.1",
 		},
@@ -57,6 +57,7 @@ func TestResolve(t *testing.T) {
 	stubA.A = net.ParseIP("127.0.0.1")
 
 	stubMsg := &dns.Msg{}
+	stubMsg.Question = []dns.Question{{Name: "test"}}
 	stubMsg.Answer = []dns.RR{stubA}
 
 	stubMsgErr := &dns.Msg{}

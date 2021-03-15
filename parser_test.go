@@ -99,6 +99,9 @@ func TestParse(t *testing.T) {
 			name:      "Two Records",
 			haveQuery: "foo.bar",
 			haveAnswer: &dns.Msg{
+				Question: []dns.Question{
+					{Name: "foo.bar."},
+				},
 				Answer: []dns.RR{
 					RR["A"],
 					RR["CNAME"],
@@ -113,6 +116,9 @@ func TestParse(t *testing.T) {
 			name:      "AAAA",
 			haveQuery: "foo.bar",
 			haveAnswer: &dns.Msg{
+				Question: []dns.Question{
+					{Name: "foo.bar."},
+				},
 				Answer: []dns.RR{
 					RR["AAAA"],
 				},
@@ -124,8 +130,12 @@ func TestParse(t *testing.T) {
 		{
 			name:      "TXT",
 			haveQuery: "foo.bar",
-			haveAnswer: &dns.Msg{Answer: []dns.RR{
-				RR["TXT"]}},
+			haveAnswer: &dns.Msg{
+				Question: []dns.Question{
+					{Name: "foo.bar."},
+				},
+				Answer: []dns.RR{
+					RR["TXT"]}},
 			want: []Record{
 				records["TXT1"],
 				records["TXT2"],
@@ -135,6 +145,9 @@ func TestParse(t *testing.T) {
 			name:      "MX",
 			haveQuery: "foo.bar",
 			haveAnswer: &dns.Msg{
+				Question: []dns.Question{
+					{Name: "foo.bar."},
+				},
 				Answer: []dns.RR{
 					RR["MX"],
 				},
@@ -147,6 +160,9 @@ func TestParse(t *testing.T) {
 			name:      "NS",
 			haveQuery: "foo.bar",
 			haveAnswer: &dns.Msg{
+				Question: []dns.Question{
+					{Name: "foo.bar."},
+				},
 				Answer: []dns.RR{
 					RR["NS"],
 				},
@@ -159,21 +175,21 @@ func TestParse(t *testing.T) {
 			name:      "Empty Answer",
 			haveQuery: "foo.bar",
 			haveAnswer: &dns.Msg{
-				Answer: []dns.RR{},
+				Question: []dns.Question{},
+				Answer:   []dns.RR{},
 			},
 			want: []Record{},
 		},
 		{
-			name:      "Empty Query",
-			haveQuery: "",
+			name:      "Empty Question",
+			haveQuery: "foo.bar",
 			haveAnswer: &dns.Msg{
+				Question: []dns.Question{},
 				Answer: []dns.RR{
 					RR["A"],
 				},
 			},
-			want: []Record{
-				records["A"],
-			},
+			want: []Record{},
 		},
 	}
 
@@ -184,7 +200,7 @@ func TestParse(t *testing.T) {
 			}
 
 			msgParser := msgParser{}
-			records := msgParser.Parse(test.haveQuery, test.haveAnswer)
+			records := msgParser.Parse(test.haveAnswer)
 
 			assert.EqualValues(t, test.want, records, test.name)
 		})

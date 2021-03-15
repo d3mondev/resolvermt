@@ -16,7 +16,7 @@ type balancer interface {
 }
 
 type messageParser interface {
-	Parse(query string, msg *dns.Msg) []Record
+	Parse(msg *dns.Msg) []Record
 }
 
 func newResolverDNS(retryCount int, serverBalancer balancer, parser messageParser) *resolverDNS {
@@ -53,7 +53,7 @@ func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 		return records
 	}
 
-	records = s.parser.Parse(query, msg)
+	records = s.parser.Parse(msg)
 
 	return records
 }
