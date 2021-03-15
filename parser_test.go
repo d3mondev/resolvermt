@@ -90,15 +90,15 @@ func TestParse(t *testing.T) {
 	records := stubRecords()
 
 	testTable := []struct {
-		name   string
-		query  string
-		answer *dns.Msg
-		want   []Record
+		name       string
+		haveQuery  string
+		haveAnswer *dns.Msg
+		want       []Record
 	}{
 		{
-			name:  "Two Records",
-			query: "foo.bar",
-			answer: &dns.Msg{
+			name:      "Two Records",
+			haveQuery: "foo.bar",
+			haveAnswer: &dns.Msg{
 				Answer: []dns.RR{
 					RR["A"],
 					RR["CNAME"],
@@ -110,9 +110,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:  "AAAA",
-			query: "foo.bar",
-			answer: &dns.Msg{
+			name:      "AAAA",
+			haveQuery: "foo.bar",
+			haveAnswer: &dns.Msg{
 				Answer: []dns.RR{
 					RR["AAAA"],
 				},
@@ -122,8 +122,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "TXT", query: "foo.bar",
-			answer: &dns.Msg{Answer: []dns.RR{
+			name:      "TXT",
+			haveQuery: "foo.bar",
+			haveAnswer: &dns.Msg{Answer: []dns.RR{
 				RR["TXT"]}},
 			want: []Record{
 				records["TXT1"],
@@ -131,9 +132,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:  "MX",
-			query: "foo.bar",
-			answer: &dns.Msg{
+			name:      "MX",
+			haveQuery: "foo.bar",
+			haveAnswer: &dns.Msg{
 				Answer: []dns.RR{
 					RR["MX"],
 				},
@@ -143,9 +144,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:  "NS",
-			query: "foo.bar",
-			answer: &dns.Msg{
+			name:      "NS",
+			haveQuery: "foo.bar",
+			haveAnswer: &dns.Msg{
 				Answer: []dns.RR{
 					RR["NS"],
 				},
@@ -155,17 +156,17 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:  "Empty Answer",
-			query: "foo.bar",
-			answer: &dns.Msg{
+			name:      "Empty Answer",
+			haveQuery: "foo.bar",
+			haveAnswer: &dns.Msg{
 				Answer: []dns.RR{},
 			},
 			want: []Record{},
 		},
 		{
-			name:  "Empty Query",
-			query: "",
-			answer: &dns.Msg{
+			name:      "Empty Query",
+			haveQuery: "",
+			haveAnswer: &dns.Msg{
 				Answer: []dns.RR{
 					RR["A"],
 				},
@@ -179,11 +180,11 @@ func TestParse(t *testing.T) {
 	for _, test := range testTable {
 		t.Run(test.name, func(t *testing.T) {
 			for i := range test.want {
-				test.want[i].Question = test.query
+				test.want[i].Question = test.haveQuery
 			}
 
 			msgParser := msgParser{}
-			records := msgParser.Parse(test.query, test.answer)
+			records := msgParser.Parse(test.haveQuery, test.haveAnswer)
 
 			assert.EqualValues(t, test.want, records, test.name)
 		})

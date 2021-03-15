@@ -21,32 +21,28 @@ func TestRoundRobinBalancerNext(t *testing.T) {
 	stubServerB := &stubServer{"8.8.4.4:53"}
 
 	testTable := []struct {
-		name    string
-		servers []server
-		count   int
-		want    *stubServer
+		name        string
+		haveServers []server
+		haveCount   int
+		want        server
 	}{
-		{name: "No Items", servers: []server{}, count: 1, want: nil},
-		{name: "Nil Resolver", servers: nil, count: 1, want: nil},
-		{name: "Single", servers: []server{stubServerA}, count: 1, want: stubServerA},
-		{name: "Second", servers: []server{stubServerA, stubServerB}, count: 2, want: stubServerB},
-		{name: "Wrap Around", servers: []server{stubServerA, stubServerB}, count: 3, want: stubServerA},
+		{name: "No Items", haveServers: []server{}, haveCount: 1, want: nil},
+		{name: "Nil Resolver", haveServers: nil, haveCount: 1, want: nil},
+		{name: "Single", haveServers: []server{stubServerA}, haveCount: 1, want: stubServerA},
+		{name: "Second", haveServers: []server{stubServerA, stubServerB}, haveCount: 2, want: stubServerB},
+		{name: "Wrap Around", haveServers: []server{stubServerA, stubServerB}, haveCount: 3, want: stubServerA},
 	}
 
 	for _, test := range testTable {
 		t.Run(test.name, func(t *testing.T) {
-			list := newRoundRobinBalancer(test.servers)
+			list := newRoundRobinBalancer(test.haveServers)
 
 			var got server
-			for i := 0; i < test.count; i++ {
+			for i := 0; i < test.haveCount; i++ {
 				got = list.Next()
 			}
 
-			if test.want == nil {
-				assert.Nil(t, got)
-			} else {
-				assert.Equal(t, test.want, got)
-			}
+			assert.Equal(t, test.want, got)
 		})
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	resolvers := []string{"8.8.8.8"}
+	resolvers := []string{}
 
 	client := New(resolvers, 3, 10, 5)
 

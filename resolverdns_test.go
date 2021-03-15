@@ -63,32 +63,32 @@ func TestResolve(t *testing.T) {
 	stubMsgErr.Rcode = dns.RcodeServerFailure
 
 	testTable := []struct {
-		name    string
-		retries int
-		errors  int
-		msg     *dns.Msg
-		want    []Record
+		name        string
+		haveRetries int
+		haveErrors  int
+		haveMsg     *dns.Msg
+		want        []Record
 	}{
-		{name: "Single Answer", retries: 3, errors: 0, msg: stubMsg, want: stubRecords},
-		{name: "Retry", retries: 3, errors: 2, msg: stubMsg, want: stubRecords},
-		{name: "Max Retry", retries: 1, errors: 1, msg: stubMsg, want: []Record{}},
-		{name: "DNS Error", retries: 3, errors: 0, msg: stubMsgErr, want: []Record{}},
+		{name: "Single Answer", haveRetries: 3, haveErrors: 0, haveMsg: stubMsg, want: stubRecords},
+		{name: "Retry", haveRetries: 3, haveErrors: 2, haveMsg: stubMsg, want: stubRecords},
+		{name: "Max Retry", haveRetries: 1, haveErrors: 1, haveMsg: stubMsg, want: []Record{}},
+		{name: "DNS Error", haveRetries: 3, haveErrors: 0, haveMsg: stubMsgErr, want: []Record{}},
 	}
 
 	for _, test := range testTable {
 		t.Run(test.name, func(t *testing.T) {
 			stubMessageParser := &stubParser{}
-			fakeServer := &fakeServer{errors: test.errors, msg: test.msg}
+			fakeServer := &fakeServer{errors: test.haveErrors, msg: test.haveMsg}
 			spyBalancer := &spyBalancer{server: fakeServer}
 
-			resolver := newResolverDNS(test.retries, spyBalancer, stubMessageParser)
+			resolver := newResolverDNS(test.haveRetries, spyBalancer, stubMessageParser)
 
 			got := resolver.Resolve("test", TypeA)
 
 			assert.EqualValues(t, test.want, got, test.name)
 
-			wantedBalancerCalls := test.errors
-			if test.retries > test.errors {
+			wantedBalancerCalls := test.haveErrors
+			if test.haveRetries > test.haveErrors {
 				wantedBalancerCalls++
 			}
 

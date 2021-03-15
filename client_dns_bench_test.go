@@ -16,7 +16,7 @@ func BenchmarkClientDNS(b *testing.B) {
 
 func runner(b *testing.B, queries int, routines int) bool {
 	return b.Run(fmt.Sprintf("queries:%d-routines:%d", queries, routines), func(b *testing.B) {
-		resolver := &stubResolver{sleep: time.Duration(1000 * time.Nanosecond), records: []Record{{}}}
+		resolver := &stubResolver{sleep: time.Duration(100 * time.Nanosecond), records: []Record{{}}}
 
 		client := newClientDNS(resolver, routines)
 		client.Resolve(make([]string, queries), TypeA)

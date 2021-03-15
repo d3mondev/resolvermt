@@ -27,17 +27,17 @@ func (s *stubResolver) Resolve(query string, rrtype RRtype) []Record {
 
 func TestClientResolve(t *testing.T) {
 	testTable := []struct {
-		name       string
-		concurrent int
-		domains    []string
-		rrtype     RRtype
-		want       []Record
+		name           string
+		haveConcurrent int
+		haveDomains    []string
+		haveRRtype     RRtype
+		want           []Record
 	}{
 		{
-			name:       "Simple",
-			concurrent: 5,
-			domains:    []string{"foo.bar"},
-			rrtype:     TypeA,
+			name:           "Simple",
+			haveConcurrent: 5,
+			haveDomains:    []string{"foo.bar"},
+			haveRRtype:     TypeA,
 			want: []Record{
 				{
 					Question: "foo.bar",
@@ -47,10 +47,10 @@ func TestClientResolve(t *testing.T) {
 			},
 		},
 		{
-			name:       "Concurrency",
-			concurrent: 2,
-			domains:    []string{"foo.bar", "abc.xyz"},
-			rrtype:     TypeA,
+			name:           "Concurrency",
+			haveConcurrent: 2,
+			haveDomains:    []string{"foo.bar", "abc.xyz"},
+			haveRRtype:     TypeA,
 			want: []Record{
 				{
 					Question: "foo.bar",
@@ -65,10 +65,10 @@ func TestClientResolve(t *testing.T) {
 			},
 		},
 		{
-			name:       "Max Concurrency",
-			concurrent: 1,
-			domains:    []string{"foo.bar", "abc.xyz", "wine.bar"},
-			rrtype:     TypeA,
+			name:           "Max Concurrency",
+			haveConcurrent: 1,
+			haveDomains:    []string{"foo.bar", "abc.xyz", "wine.bar"},
+			haveRRtype:     TypeA,
 			want: []Record{
 				{
 					Question: "foo.bar",
@@ -93,9 +93,9 @@ func TestClientResolve(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			resolver := &stubResolver{sleep: time.Duration(10 * time.Millisecond), records: test.want}
 
-			client := newClientDNS(resolver, test.concurrent)
+			client := newClientDNS(resolver, test.haveConcurrent)
 
-			got := client.Resolve(test.domains, test.rrtype)
+			got := client.Resolve(test.haveDomains, test.haveRRtype)
 
 			sort.SliceStable(test.want, func(i, j int) bool {
 				return test.want[i].Question < test.want[j].Question

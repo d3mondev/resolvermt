@@ -1,10 +1,7 @@
 package fastdns
 
 import (
-	"math/rand"
-	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/miekg/dns"
@@ -13,11 +10,9 @@ import (
 
 type rateLimitedServer struct {
 	limiter    ratelimit.Limiter
-	client     *dns.Client
 	ipAddrPort string
 
-	random *rand.Rand
-	mutex  sync.Mutex
+	pool *pool
 }
 
 type server interface {
@@ -25,29 +20,39 @@ type server interface {
 }
 
 func newRateLimitedServerList(ipAddrPort []string, queriesPerSecond int) []server {
-	list := make([]server, len(ipAddrPort))
+	list := []server{}
 
 	for i := range ipAddrPort {
-		list[i] = newRateLimitedServer(ipAddrPort[i], queriesPerSecond)
+		server, err := newRateLimitedServer(ipAddrPort[i], queriesPerSecond)
+
+		if err != nil {
+			continue
+		}
+
+		list = append(list, server)
 	}
 
 	return list
 }
 
-func newRateLimitedServer(ipAddrPort string, queriesPerSecond int) *rateLimitedServer {
-	if !strings.Contains(ipAddrPort, ":") {
-		ipAddrPort += ":53"
+func newRateLimitedServer(IPAddrPort string, queriesPerSecond int) (*rateLimitedServer, error) {
+	if !strings.Contains(IPAddrPort, ":") {
+		IPAddrPort += ":53"
 	}
 
 	server := rateLimitedServer{}
 	server.limiter = ratelimit.New(queriesPerSecond, ratelimit.WithoutSlack)
-	server.ipAddrPort = ipAddrPort
-	server.random = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+	server.ipAddrPort = IPAddrPort
 
-	server.client = new(dns.Client)
-	server.client.Dialer = &net.Dialer{Timeout: 2000 * time.Millisecond}
+	pool, err := newPool(1, queriesPerSecond, IPAddrPort)
 
-	return &server
+	if err != nil {
+		return nil, err
+	}
+
+	server.pool = pool
+
+	return &server, nil
 }
 
 func (s *rateLimitedServer) Query(query string, rrtype RRtype) (*dns.Msg, time.Duration, error) {
@@ -59,12 +64,25 @@ func (s *rateLimitedServer) Query(query string, rrtype RRtype) (*dns.Msg, time.D
 
 	s.limiter.Take()
 
-	return s.client.Exchange(msg, s.ipAddrPort)
+	client, conn, err := s.pool.Get()
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	msg, dur, err := client.ExchangeWithConn(msg, conn)
+
+	s.pool.Return(conn)
+
+	return msg, dur, err
 }
 
 func (s *rateLimitedServer) newID() uint16 {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	return uint16(randID.Int31())
+}
 
-	return uint16(s.random.Int31())
+var randID *saferand
+
+func init() {
+	randID = newSafeRand(true)
 }
