@@ -1,9 +1,9 @@
-package fastdns_test
+package resolvermt_test
 
 import (
 	"fmt"
 
-	"github.com/d3mondev/fastdns"
+	"github.com/d3mondev/resolvermt"
 )
 
 func Example() {
@@ -26,10 +26,10 @@ func Example() {
 		"wordpress.org",
 	}
 
-	client := fastdns.New(resolvers, 3, 10, 5)
+	client := resolvermt.New(resolvers, 3, 10, 5)
 	defer client.Close()
 
-	results := client.Resolve(domains, fastdns.TypeA)
+	results := client.Resolve(domains, resolvermt.TypeA)
 
 	for _, record := range results {
 		fmt.Printf("%s %s %s\n", record.Question, record.Type, record.Answer)

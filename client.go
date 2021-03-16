@@ -1,4 +1,4 @@
-package fastdns
+package resolvermt
 
 // Client is used to send DNS requests to resolvers concurrently.
 type Client interface {

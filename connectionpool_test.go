@@ -1,4 +1,4 @@
-package fastdns
+package resolvermt
 
 import (
 	"sync"

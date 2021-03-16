@@ -1,4 +1,4 @@
-package fastdns
+package resolvermt
 
 import (
 	"github.com/miekg/dns"

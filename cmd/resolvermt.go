@@ -7,7 +7,7 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/d3mondev/fastdns"
+	"github.com/d3mondev/resolvermt"
 )
 
 func main() {
@@ -59,10 +59,10 @@ func main() {
 
 	domains := strings.Split(string(content), "\n")
 
-	client := fastdns.New(resolvers, retries, qps, concurrency)
+	client := resolvermt.New(resolvers, retries, qps, concurrency)
 	defer client.Close()
 
-	records := client.Resolve(domains, fastdns.TypeA)
+	records := client.Resolve(domains, resolvermt.TypeA)
 
 	for _, record := range records {
 		fmt.Printf("%s %s %s\n", record.Question, record.Type, record.Answer)

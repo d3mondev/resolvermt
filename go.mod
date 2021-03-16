@@ -1,4 +1,4 @@
-module github.com/d3mondev/fastdns
+module github.com/d3mondev/resolvermt
 
 go 1.16
 
