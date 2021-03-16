@@ -9,19 +9,21 @@ import (
 	"github.com/miekg/dns"
 )
 
-type pool struct {
+type connectionPool struct {
 	sync.Mutex
 
 	client     *dns.Client
 	IPAddrPort string
-	channel    chan *dns.Conn
-	maxCount   int
-	initCount  int
-	count      int
+
+	channel chan *dns.Conn
+
+	maxCount  int
+	initCount int
+	count     int
 }
 
-func newPool(initCount int, maxCount int, IPAddrPort string) (*pool, error) {
-	pool := &pool{
+func newConnectionPool(initCount int, maxCount int, IPAddrPort string) (*connectionPool, error) {
+	pool := &connectionPool{
 		initCount:  initCount,
 		maxCount:   maxCount,
 		IPAddrPort: IPAddrPort,
@@ -45,11 +47,11 @@ func newPool(initCount int, maxCount int, IPAddrPort string) (*pool, error) {
 	return pool, nil
 }
 
-func (s *pool) Count() int {
+func (s *connectionPool) Count() int {
 	return s.count
 }
 
-func (s *pool) Get() (*dns.Client, *dns.Conn, error) {
+func (s *connectionPool) Get() (*dns.Client, *dns.Conn, error) {
 	for {
 		// Can't create new connections, return an existing one
 		if s.count == s.maxCount {
@@ -92,11 +94,21 @@ func (s *pool) Get() (*dns.Client, *dns.Conn, error) {
 	}
 }
 
-func (s *pool) Return(conn *dns.Conn) {
+func (s *connectionPool) Return(conn *dns.Conn) {
 	s.channel <- conn
 }
 
-func (s *pool) createConn() (*dns.Conn, error) {
+func (s *connectionPool) Close() {
+	close(s.channel)
+
+	for conn := range s.channel {
+		conn.Close()
+	}
+
+	s.count = 0
+}
+
+func (s *connectionPool) createConn() (*dns.Conn, error) {
 	c, err := s.client.Dial(s.IPAddrPort)
 
 	if err != nil {

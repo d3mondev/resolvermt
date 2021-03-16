@@ -14,6 +14,8 @@ type stubResolver struct {
 	records []Record
 	index   int32
 	sleep   time.Duration
+
+	closes int
 }
 
 func (s *stubResolver) Resolve(query string, rrtype RRtype) []Record {
@@ -25,7 +27,11 @@ func (s *stubResolver) Resolve(query string, rrtype RRtype) []Record {
 	return []Record{record}
 }
 
-func TestClientResolve(t *testing.T) {
+func (s *stubResolver) Close() {
+	s.closes++
+}
+
+func TestClientDNSResolve(t *testing.T) {
 	testTable := []struct {
 		name           string
 		haveConcurrent int
@@ -110,10 +116,11 @@ func TestClientResolve(t *testing.T) {
 	}
 }
 
-func TestClientResolveLarge(t *testing.T) {
+func TestClientDNSResolveLarge(t *testing.T) {
 	const iterations int = 32768
 
 	resolver := &stubResolver{sleep: time.Duration(0), records: []Record{{Question: "foo.bar", Type: TypeA, Answer: "127.0.0.1"}}}
+
 	client := newClientDNS(resolver, 10)
 
 	list := make([]string, iterations)
@@ -124,4 +131,13 @@ func TestClientResolveLarge(t *testing.T) {
 	got := client.Resolve(list, TypeA)
 
 	assert.Equal(t, iterations, len(got))
+}
+
+func TestClientDNSClose(t *testing.T) {
+	resolver := &stubResolver{}
+
+	client := newClientDNS(resolver, 10)
+	client.Close()
+
+	assert.Equal(t, 1, resolver.closes)
 }

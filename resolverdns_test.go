@@ -12,6 +12,7 @@ import (
 
 type spyBalancer struct {
 	calls  int32
+	closes int32
 	server server
 }
 
@@ -19,6 +20,10 @@ func (s *spyBalancer) Next() server {
 	s.calls++
 
 	return s.server
+}
+
+func (s *spyBalancer) Close() {
+	s.closes++
 }
 
 type stubParser struct{}
@@ -45,6 +50,9 @@ func (s *fakeServer) Query(query string, ttype RRtype) (*dns.Msg, time.Duration,
 	}
 
 	return s.msg, time.Duration(0), nil
+}
+
+func (s *fakeServer) Close() {
 }
 
 func TestResolve(t *testing.T) {
@@ -96,4 +104,15 @@ func TestResolve(t *testing.T) {
 			assert.EqualValues(t, wantedBalancerCalls, spyBalancer.calls)
 		})
 	}
+}
+
+func TestClose(t *testing.T) {
+	stubMessageParser := &stubParser{}
+	fakeServer := &fakeServer{errors: 0, msg: &dns.Msg{}}
+	spyBalancer := &spyBalancer{server: fakeServer}
+
+	resolver := newResolverDNS(3, spyBalancer, stubMessageParser)
+	resolver.Close()
+
+	assert.EqualValues(t, 1, spyBalancer.closes)
 }

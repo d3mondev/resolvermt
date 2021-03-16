@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPoolNew(t *testing.T) {
+func TestServerPoolNew(t *testing.T) {
 	tests := []struct {
 		name           string
 		haveInitCount  int
@@ -24,7 +24,7 @@ func TestPoolNew(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pool, gotErr := newPool(test.haveInitCount, test.haveMaxCount, test.haveIPAddrPort)
+			pool, gotErr := newConnectionPool(test.haveInitCount, test.haveMaxCount, test.haveIPAddrPort)
 
 			if gotErr == nil {
 				gotCount := pool.Count()
@@ -36,7 +36,7 @@ func TestPoolNew(t *testing.T) {
 	}
 }
 
-func TestPoolGet(t *testing.T) {
+func TestServerPoolGet(t *testing.T) {
 	tests := []struct {
 		name           string
 		haveInitCount  int
@@ -53,7 +53,7 @@ func TestPoolGet(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pool, err := newPool(test.haveInitCount, test.haveMaxCount, test.haveIPAddrPort)
+			pool, err := newConnectionPool(test.haveInitCount, test.haveMaxCount, test.haveIPAddrPort)
 
 			if err != nil {
 				t.Fatal("pool creation failed")
@@ -67,8 +67,8 @@ func TestPoolGet(t *testing.T) {
 	}
 }
 
-func TestPoolReturn(t *testing.T) {
-	pool, err := newPool(0, 1, "8.8.8.8:53")
+func TestServerPoolReturn(t *testing.T) {
+	pool, err := newConnectionPool(0, 1, "8.8.8.8:53")
 
 	if err != nil {
 		t.Fatal("pool creation failed")
@@ -96,8 +96,8 @@ func TestPoolReturn(t *testing.T) {
 	wg.Wait()
 }
 
-func TestPoolGetFail(t *testing.T) {
-	pool, err := newPool(0, 2, "8.8.8.8:53")
+func TestServerPoolGetFail(t *testing.T) {
+	pool, err := newConnectionPool(0, 2, "8.8.8.8:53")
 
 	if err != nil {
 		t.Fatal("pool creation failed")
@@ -125,4 +125,18 @@ func TestPoolGetFail(t *testing.T) {
 	pool.Return(connA)
 
 	wg.Wait()
+}
+
+func TestServerPoolClose(t *testing.T) {
+	pool, err := newConnectionPool(2, 2, "8.8.8.8:53")
+
+	if err != nil {
+		t.Fatal("pool creation failed")
+	}
+
+	pool.Close()
+
+	_, open := <-pool.channel
+
+	assert.False(t, open)
 }

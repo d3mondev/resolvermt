@@ -12,7 +12,7 @@ func (s *msgParser) Parse(msg *dns.Msg) []Record {
 	records := []Record{}
 
 	for _, answer := range msg.Answer {
-		// Invalid question/answer
+		// Invalid question, discard answer
 		if len(msg.Question) == 0 {
 			continue
 		}

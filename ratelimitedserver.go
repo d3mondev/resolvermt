@@ -12,11 +12,18 @@ type rateLimitedServer struct {
 	limiter    ratelimit.Limiter
 	ipAddrPort string
 
-	pool *pool
+	pool pool
+}
+
+type pool interface {
+	Get() (*dns.Client, *dns.Conn, error)
+	Return(conn *dns.Conn)
+	Close()
 }
 
 type server interface {
 	Query(query string, rrtype RRtype) (*dns.Msg, time.Duration, error)
+	Close()
 }
 
 func newRateLimitedServerList(ipAddrPort []string, queriesPerSecond int) []server {
@@ -44,7 +51,7 @@ func newRateLimitedServer(IPAddrPort string, queriesPerSecond int) (*rateLimited
 	server.limiter = ratelimit.New(queriesPerSecond, ratelimit.WithoutSlack)
 	server.ipAddrPort = IPAddrPort
 
-	pool, err := newPool(1, queriesPerSecond, IPAddrPort)
+	pool, err := newConnectionPool(1, queriesPerSecond, IPAddrPort)
 
 	if err != nil {
 		return nil, err
@@ -75,6 +82,10 @@ func (s *rateLimitedServer) Query(query string, rrtype RRtype) (*dns.Msg, time.D
 	s.pool.Return(conn)
 
 	return msg, dur, err
+}
+
+func (s *rateLimitedServer) Close() {
+	s.pool.Close()
 }
 
 func (s *rateLimitedServer) newID() uint16 {

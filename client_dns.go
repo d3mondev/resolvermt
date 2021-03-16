@@ -70,3 +70,7 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 
 	return records
 }
+
+func (s *clientDNS) Close() {
+	s.resolver.Close()
+}

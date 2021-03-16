@@ -27,6 +27,7 @@ func Example() {
 	}
 
 	client := fastdns.New(resolvers, 3, 10, 5)
+	defer client.Close()
 
 	results := client.Resolve(domains, fastdns.TypeA)
 

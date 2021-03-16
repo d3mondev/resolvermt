@@ -60,6 +60,7 @@ func main() {
 	domains := strings.Split(string(content), "\n")
 
 	client := fastdns.New(resolvers, retries, qps, concurrency)
+	defer client.Close()
 
 	records := client.Resolve(domains, fastdns.TypeA)
 

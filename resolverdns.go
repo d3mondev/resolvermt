@@ -13,6 +13,7 @@ type resolverDNS struct {
 
 type balancer interface {
 	Next() server
+	Close()
 }
 
 type messageParser interface {
@@ -56,4 +57,8 @@ func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 	records = s.parser.Parse(msg)
 
 	return records
+}
+
+func (s *resolverDNS) Close() {
+	s.serverBalancer.Close()
 }
