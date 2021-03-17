@@ -1,4 +1,4 @@
-# Resolver MT [![Coverage Status][cov-img]][cov] ![test][test-img]
+# Resolver MT [![GoDoc][doc-img]][doc] [![Coverage Status][cov-img]][cov] ![test][test-img]
 
 This package provides a multithreaded and thread-safe DNS resolver client for Go. It is used to quickly resolve DNS queries in applications that need to perform requests concurrently, while also respecting a limit of queries per second for each resolver.
 
@@ -70,6 +70,8 @@ wordpress.org A 198.143.164.252
 
 In its current implementation, the client will create at least one or more sockets per resolver to send and receive DNS queries. As each socket uses an open file descriptor, it is easy to hit the limit of open file descriptors in the OS. If this happens, the client will handle the failed connections but the performance may suffer with a large number of resolvers and threads. If you are trying to run a large number of requests concurrently (100+), increase the limit with `ulimit -n 102400`.
 
+[doc-img]: https://pkg.go.dev/badge/github.com/d3mondev/resolvermt
+[doc]: https://pkg.go.dev/github.com/d3mondev/resolvermt
 [cov-img]: https://codecov.io/gh/d3mondev/resolvermt/branch/master/graph/badge.svg?token=3D1I4J6YA2
 [cov]: https://codecov.io/gh/d3mondev/resolvermt
 [test-img]: https://github.com/d3mondev/resolvermt/workflows/test/badge.svg
