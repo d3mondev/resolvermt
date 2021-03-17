@@ -22,6 +22,9 @@ msan: ## Run memory sanitizer
 build: ## Build the binary file
 	go build -v $(PKG_LIST)
 
+cover: ## Code coverage
+	go test -coverprofile=cover.out -coverpkg=$(PKG_LIST) $(PKG_LIST)
+
 clean: ## Remove previous build
 	go clean
 
