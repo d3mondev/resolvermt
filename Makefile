@@ -16,10 +16,10 @@ test: ## Run unit tests
 bench: ## Run benchmark
 	go test -bench $(PKG_LIST)
 
-msan: dep ## Run memory sanitizer
+msan: ## Run memory sanitizer
 	go test -msan $(PKG_LIST)
 
-build: dep ## Build the binary file
+build: ## Build the binary file
 	go build -v $(PKG_LIST)
 
 clean: ## Remove previous build
