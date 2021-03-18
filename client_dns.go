@@ -1,11 +1,16 @@
 package resolvermt
 
 type clientDNS struct {
-	resolver       Resolver
+	resolver       resolver
 	maxConcurrency int
 }
 
-func newClientDNS(resolver Resolver, maxConcurrency int) *clientDNS {
+type resolver interface {
+	Resolve(query string, rrtype RRtype) []Record
+	Close()
+}
+
+func newClientDNS(resolver resolver, maxConcurrency int) *clientDNS {
 	client := clientDNS{
 		resolver:       resolver,
 		maxConcurrency: maxConcurrency,

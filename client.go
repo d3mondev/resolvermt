@@ -25,11 +25,3 @@ func New(resolvers []string, retryCount int, queriesPerSecond int, maxConcurrenc
 
 	return newClientDNS(resolver, maxConcurrency)
 }
-
-// Resolver is used to resolve a DNS query and return a list of records.
-// The process is responsible for selecting which DNS servers to use and
-// for rate-limiting.
-type Resolver interface {
-	Resolve(query string, rrtype RRtype) []Record
-	Close()
-}
