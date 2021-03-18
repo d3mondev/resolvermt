@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"runtime/pprof"
 	"strings"
@@ -39,7 +40,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	content, err := os.ReadFile(resolverFile)
+	content, err := ioutil.ReadFile(resolverFile)
 
 	if err != nil {
 		fmt.Printf("unable to open file %s\n\n", resolverFile)
@@ -49,7 +50,7 @@ func main() {
 
 	resolvers := strings.Split(string(content), "\n")
 
-	content, err = os.ReadFile(domainFile)
+	content, err = ioutil.ReadFile(domainFile)
 
 	if err != nil {
 		fmt.Printf("unable to open file %s\n\n", domainFile)
