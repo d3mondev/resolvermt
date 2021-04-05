@@ -36,7 +36,10 @@ func main() {
 			os.Exit(1)
 		}
 
-		pprof.StartCPUProfile(file)
+		if err := pprof.StartCPUProfile(file); err != nil {
+			fmt.Printf("unable to start cpu profiling\n\n")
+			os.Exit(1)
+		}
 		defer pprof.StopCPUProfile()
 	}
 
@@ -79,7 +82,10 @@ func main() {
 
 		defer file.Close()
 
-		pprof.WriteHeapProfile(file)
+		if err := pprof.WriteHeapProfile(file); err != nil {
+			fmt.Printf("unable to write memory profile\n\n")
+			os.Exit(1)
+		}
 	}
 }
 

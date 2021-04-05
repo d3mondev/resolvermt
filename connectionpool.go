@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -17,15 +18,15 @@ type connectionPool struct {
 
 	channel chan *dns.Conn
 
-	maxCount  int
-	initCount int
-	count     int
+	maxCount  int32
+	initCount int32
+	count     int32
 }
 
 func newConnectionPool(initCount int, maxCount int, IPAddrPort string) (*connectionPool, error) {
 	pool := &connectionPool{
-		initCount:  initCount,
-		maxCount:   maxCount,
+		initCount:  int32(initCount),
+		maxCount:   int32(maxCount),
 		IPAddrPort: IPAddrPort,
 	}
 
@@ -48,13 +49,13 @@ func newConnectionPool(initCount int, maxCount int, IPAddrPort string) (*connect
 }
 
 func (s *connectionPool) Count() int {
-	return s.count
+	return int(s.count)
 }
 
 func (s *connectionPool) Get() (*dns.Client, *dns.Conn, error) {
 	for {
 		// Can't create new connections, return an existing one
-		if s.count == s.maxCount {
+		if atomic.LoadInt32(&s.count) == s.maxCount {
 			if s.count == 0 {
 				return nil, nil, errors.New("connection pool empty and unable to create new connections")
 			}
@@ -115,7 +116,7 @@ func (s *connectionPool) createConn() (*dns.Conn, error) {
 		return nil, err
 	}
 
-	s.count++
+	atomic.AddInt32(&s.count, 1)
 
 	return c, nil
 }
