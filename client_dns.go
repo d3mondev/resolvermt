@@ -1,8 +1,12 @@
 package resolvermt
 
+import "sync/atomic"
+
 type clientDNS struct {
 	resolver       resolver
 	maxConcurrency int
+
+	queryCount int32
 }
 
 type resolver interface {
@@ -20,15 +24,19 @@ func newClientDNS(resolver resolver, maxConcurrency int) *clientDNS {
 }
 
 func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
-	queryChan := make(chan string, s.maxConcurrency)
-	resultChan := make(chan []Record, s.maxConcurrency)
+	records := []Record{}
 
 	queryCount := len(queries)
 	queryIndex := 0
 
-	received := 0
+	if queryCount == 0 {
+		return records
+	}
 
-	records := []Record{}
+	queryChan := make(chan string, s.maxConcurrency)
+	resultChan := make(chan []Record, s.maxConcurrency)
+
+	received := 0
 
 	// Start goroutines
 	for i := 0; i < s.maxConcurrency; i++ {
@@ -73,7 +81,13 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 	// Work done
 	close(queryChan)
 
+	atomic.AddInt32(&s.queryCount, int32(queryCount))
+
 	return records
+}
+
+func (s *clientDNS) QueryCount() int {
+	return int(atomic.LoadInt32(&s.queryCount))
 }
 
 func (s *clientDNS) Close() {

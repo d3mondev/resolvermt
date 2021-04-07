@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No changes yet.
 
+## [0.2.0] - 2021-04-07
+### Added
+- Implementd QueryCount() method on Client to get the number of DNS queries performed.
+
+### Fixed
+- Fix panic condition when list of domains to resolve is empty.
+
 ## [0.1.1] - 2021-04-05
 ### Fixed
 - Fix race condition happening when creating new connections.
@@ -18,3 +25,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/d3mondev/resolvermt/compare/v0.1.1...HEAD
 [0.1.0]: https://github.com/d3mondev/resolvermt/releases/tag/v0.1.0
 [0.1.1]: https://github.com/d3mondev/resolvermt/releases/tag/v0.1.1
+[0.2.0]: https://github.com/d3mondev/resolvermt/releases/tag/v0.2.0

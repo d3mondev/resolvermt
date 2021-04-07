@@ -40,6 +40,13 @@ func TestClientDNSResolve(t *testing.T) {
 		want           []Record
 	}{
 		{
+			name:           "Empty",
+			haveConcurrent: 5,
+			haveDomains:    []string{},
+			haveRRtype:     TypeA,
+			want:           []Record{},
+		},
+		{
 			name:           "Simple",
 			haveConcurrent: 5,
 			haveDomains:    []string{"foo.bar"},
@@ -131,6 +138,33 @@ func TestClientDNSResolveLarge(t *testing.T) {
 	got := client.Resolve(list, TypeA)
 
 	assert.Equal(t, iterations, len(got))
+}
+
+func TestClientDNSQueryCount(t *testing.T) {
+	tests := []struct {
+		name        string
+		haveDomains []string
+		haveThreads int
+		want        int
+	}{
+		{name: "No Query", haveDomains: []string{}, haveThreads: 1, want: 0},
+		{name: "Single Query", haveDomains: []string{"test.com"}, haveThreads: 1, want: 1},
+		{name: "Multiple Queries Single Thread", haveDomains: []string{"test.com", "foo.com", "bar.com"}, haveThreads: 1, want: 3},
+		{name: "Multiple Queries Multi Thread", haveDomains: []string{"test.com", "foo.com", "bar.com"}, haveThreads: 10, want: 3},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resolver := &stubResolver{sleep: time.Duration(0), records: []Record{{Question: "foo.bar", Type: TypeA, Answer: "127.0.0.1"}}}
+
+			client := newClientDNS(resolver, 10)
+			client.Resolve(test.haveDomains, TypeA)
+
+			got := client.QueryCount()
+
+			assert.Equal(t, test.want, got)
+		})
+	}
 }
 
 func TestClientDNSClose(t *testing.T) {
