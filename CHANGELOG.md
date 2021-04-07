@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2021-04-07
 ### Added
-- Implementd QueryCount() method on Client to get the number of DNS queries performed.
+- Implement QueryCount() method on Client to get the number of DNS queries performed.
 
 ### Fixed
 - Fix panic condition when list of domains to resolve is empty.
