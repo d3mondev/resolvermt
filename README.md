@@ -68,7 +68,7 @@ en.wikipedia.org A 208.80.154.224
 wordpress.org A 198.143.164.252
 ```
 
-In its current implementation, the client will create at least one or more sockets per resolver to send and receive DNS queries. As each socket uses an open file descriptor, it is easy to hit the limit of open file descriptors in the OS. If this happens, the client will handle the failed connections but the performance may suffer with a large number of resolvers and threads. If you are trying to run a large number of requests concurrently (100+), increase the limit with `ulimit -n 102400`.
+In its current implementation, the client will create at least one or more sockets per resolver to send and receive DNS queries. As each socket uses an open file descriptor, it is easy to hit the limit of open file descriptors in the OS. If this happens, the client will handle the failed connections but the performance may suffer with a large number of resolvers and threads. If you are trying to run a large number of requests concurrently (100+), increase the limit with `ulimit -n 102400`. A future version may change the way queries are made to prevent this.
 
 [doc-img]: https://pkg.go.dev/badge/github.com/d3mondev/resolvermt
 [doc]: https://pkg.go.dev/github.com/d3mondev/resolvermt

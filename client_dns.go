@@ -1,11 +1,21 @@
 package resolvermt
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+	"time"
+)
+
+type question struct {
+	question string
+	rrtype   RRtype
+	channel  chan []Record
+}
 
 type clientDNS struct {
 	resolver       resolver
 	maxConcurrency int
 
+	queryChan  chan question
 	queryCount int32
 }
 
@@ -20,27 +30,16 @@ func newClientDNS(resolver resolver, maxConcurrency int) *clientDNS {
 		maxConcurrency: maxConcurrency,
 	}
 
+	client.startThreads()
+
 	return &client
 }
 
-func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
-	records := []Record{}
+func (s *clientDNS) startThreads() {
+	s.queryChan = make(chan question, s.maxConcurrency)
 
-	queryCount := len(queries)
-	queryIndex := 0
-
-	if queryCount == 0 {
-		return records
-	}
-
-	queryChan := make(chan string, s.maxConcurrency)
-	resultChan := make(chan []Record, s.maxConcurrency)
-
-	received := 0
-
-	// Start goroutines
 	for i := 0; i < s.maxConcurrency; i++ {
-		go func(queryChan chan string, resultChan chan []Record, rrtype RRtype) {
+		go func(queryChan chan question) {
 			for {
 				query, open := <-queryChan
 
@@ -48,39 +47,56 @@ func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
 					return
 				}
 
-				results := s.resolver.Resolve(query, rrtype)
-				resultChan <- results
+				results := s.resolver.Resolve(query.question, query.rrtype)
+				query.channel <- results
 			}
-		}(queryChan, resultChan, rrtype)
+		}(s.queryChan)
 	}
+}
+
+func (s *clientDNS) Resolve(queries []string, rrtype RRtype) []Record {
+	records := []Record{}
+
+	queryCount := len(queries)
+
+	if queryCount == 0 {
+		return records
+	}
+
+	// Start result reader
+	var received int32
+	resultChan := make(chan []Record, s.maxConcurrency)
+	go func(resultChan chan []Record) {
+		for {
+			response, open := <-resultChan
+
+			if !open {
+				return
+			}
+
+			records = append(records, response...)
+			atomic.AddInt32(&received, 1)
+		}
+	}(resultChan)
 
 	// Send work to goroutines
-	for {
-		// Process completed results
-		for i := len(resultChan); i > 0; i-- {
-			records = append(records, <-resultChan...)
-			received++
+	for _, query := range queries {
+		question := question{
+			question: query,
+			rrtype:   rrtype,
+			channel:  resultChan,
 		}
 
-		// Send the next query
-		queryChan <- queries[queryIndex]
-		queryIndex++
-
-		// Exit condition
-		if queryIndex >= queryCount {
-			break
-		}
+		s.queryChan <- question
 	}
 
-	// Process remaining results
-	for received < queryCount {
-		records = append(records, <-resultChan...)
-		received++
+	// Wait for results
+	for int(atomic.LoadInt32(&received)) < queryCount {
+		time.Sleep(1 * time.Millisecond)
 	}
 
 	// Work done
-	close(queryChan)
-
+	close(resultChan)
 	atomic.AddInt32(&s.queryCount, int32(queryCount))
 
 	return records
@@ -91,5 +107,6 @@ func (s *clientDNS) QueryCount() int {
 }
 
 func (s *clientDNS) Close() {
+	close(s.queryChan)
 	s.resolver.Close()
 }
