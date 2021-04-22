@@ -35,17 +35,24 @@ func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 	var msg *dns.Msg
 
 	// Send the request to a server, retrying on error
-	for i := 0; i < s.retryCount; i++ {
+	var i int
+	for i = 0; i < s.retryCount; i++ {
 		server := s.serverBalancer.Next()
 		msg, _, err = server.Query(query, rrtype)
 
-		if err == nil {
-			break
+		if err != nil {
+			continue
 		}
+
+		if msg.Rcode == dns.RcodeRefused || msg.Rcode == dns.RcodeServerFailure {
+			continue
+		}
+
+		break
 	}
 
 	// Something went wrong with the request
-	if err != nil {
+	if i == s.retryCount {
 		return records
 	}
 

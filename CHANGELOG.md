@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No changes yet.
 
+## [0.3.1] - 2021-04-21
+### Changed
+- Retry with another resolver on SERVFAIL and REFUSED.
+
 ## [0.3.0] - 2021-04-16
 ### Changed
 - Optimize the number of goroutines created during concurrent Resolve calls.
@@ -26,8 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/d3mondev/resolvermt/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/d3mondev/resolvermt/compare/v0.4.0...HEAD
 [0.1.0]: https://github.com/d3mondev/resolvermt/releases/tag/v0.1.0
 [0.1.1]: https://github.com/d3mondev/resolvermt/releases/tag/v0.1.1
 [0.2.0]: https://github.com/d3mondev/resolvermt/releases/tag/v0.2.0
 [0.3.0]: https://github.com/d3mondev/resolvermt/releases/tag/v0.3.0
+[0.3.1]: https://github.com/d3mondev/resolvermt/releases/tag/v0.3.1

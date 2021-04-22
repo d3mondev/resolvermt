@@ -68,20 +68,25 @@ func TestResolve(t *testing.T) {
 	stubMsg.Question = []dns.Question{{Name: "test"}}
 	stubMsg.Answer = []dns.RR{stubA}
 
-	stubMsgErr := &dns.Msg{}
-	stubMsgErr.Rcode = dns.RcodeServerFailure
+	stubMsgSrvFail := &dns.Msg{}
+	stubMsgSrvFail.Rcode = dns.RcodeServerFailure
+
+	stubMsgNX := &dns.Msg{}
+	stubMsgNX.Rcode = dns.RcodeNameError
 
 	testTable := []struct {
 		name        string
 		haveRetries int
 		haveErrors  int
 		haveMsg     *dns.Msg
-		want        []Record
+		wantQueries int
+		wantRecords []Record
 	}{
-		{name: "Single Answer", haveRetries: 3, haveErrors: 0, haveMsg: stubMsg, want: stubRecords},
-		{name: "Retry", haveRetries: 3, haveErrors: 2, haveMsg: stubMsg, want: stubRecords},
-		{name: "Max Retry", haveRetries: 1, haveErrors: 1, haveMsg: stubMsg, want: []Record{}},
-		{name: "DNS Error", haveRetries: 3, haveErrors: 0, haveMsg: stubMsgErr, want: []Record{}},
+		{name: "Single Answer", haveRetries: 3, haveErrors: 0, haveMsg: stubMsg, wantQueries: 1, wantRecords: stubRecords},
+		{name: "Retry", haveRetries: 3, haveErrors: 2, haveMsg: stubMsg, wantQueries: 3, wantRecords: stubRecords},
+		{name: "Max Retry", haveRetries: 1, haveErrors: 1, haveMsg: stubMsg, wantQueries: 1, wantRecords: []Record{}},
+		{name: "SERVFAIL Error", haveRetries: 3, haveErrors: 0, haveMsg: stubMsgSrvFail, wantQueries: 3, wantRecords: []Record{}},
+		{name: "NXDOMAIN Error", haveRetries: 3, haveErrors: 0, haveMsg: stubMsgNX, wantQueries: 1, wantRecords: []Record{}},
 	}
 
 	for _, test := range testTable {
@@ -94,14 +99,8 @@ func TestResolve(t *testing.T) {
 
 			got := resolver.Resolve("test", TypeA)
 
-			assert.EqualValues(t, test.want, got, test.name)
-
-			wantedBalancerCalls := test.haveErrors
-			if test.haveRetries > test.haveErrors {
-				wantedBalancerCalls++
-			}
-
-			assert.EqualValues(t, wantedBalancerCalls, spyBalancer.calls)
+			assert.EqualValues(t, test.wantRecords, got, test.name)
+			assert.EqualValues(t, test.wantQueries, spyBalancer.calls)
 		})
 	}
 }
