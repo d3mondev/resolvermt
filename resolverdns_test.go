@@ -26,18 +26,6 @@ func (s *spyBalancer) Close() {
 	s.closes++
 }
 
-type stubParser struct{}
-
-func (s *stubParser) Parse(msg *dns.Msg) []Record {
-	return []Record{
-		{
-			Question: msg.Question[0].Name,
-			Type:     TypeA,
-			Answer:   "127.0.0.1",
-		},
-	}
-}
-
 type fakeServer struct {
 	errors int
 	msg    *dns.Msg
@@ -55,63 +43,105 @@ func (s *fakeServer) Query(query string, ttype RRtype) (*dns.Msg, time.Duration,
 func (s *fakeServer) Close() {
 }
 
-func TestResolve(t *testing.T) {
-	stubRecords := []Record{
-		{"test", TypeA, "127.0.0.1"},
+func createStubResolver(retryCount int, retryCodes []int, errorCount int, msg *dns.Msg) (*resolverDNS, *spyBalancer) {
+	stubServer := &fakeServer{
+		errors: errorCount,
+		msg:    msg,
 	}
+	spyBalancer := &spyBalancer{server: stubServer}
+	resolver := newResolverDNS(retryCount, retryCodes, spyBalancer, &msgParser{})
 
-	stubA := &dns.A{}
-	stubA.Hdr.Rrtype = dns.TypeA
-	stubA.A = net.ParseIP("127.0.0.1")
+	return resolver, spyBalancer
+}
 
+var stubARecord = Record{"www.example.com", TypeA, "127.0.0.1"}
+var stubCNAMERecord = Record{"www.example.com", TypeCNAME, "cname.example.com"}
+
+func createStubMessage(code int, rrtype RRtype) *dns.Msg {
 	stubMsg := &dns.Msg{}
-	stubMsg.Question = []dns.Question{{Name: "test"}}
-	stubMsg.Answer = []dns.RR{stubA}
+	stubMsg.Question = []dns.Question{{Name: "www.example.com"}}
+	stubMsg.Rcode = code
 
-	stubMsgSrvFail := &dns.Msg{}
-	stubMsgSrvFail.Rcode = dns.RcodeServerFailure
-
-	stubMsgNX := &dns.Msg{}
-	stubMsgNX.Rcode = dns.RcodeNameError
-
-	testTable := []struct {
-		name        string
-		haveRetries int
-		haveErrors  int
-		haveMsg     *dns.Msg
-		wantQueries int
-		wantRecords []Record
-	}{
-		{name: "Single Answer", haveRetries: 3, haveErrors: 0, haveMsg: stubMsg, wantQueries: 1, wantRecords: stubRecords},
-		{name: "Retry", haveRetries: 3, haveErrors: 2, haveMsg: stubMsg, wantQueries: 3, wantRecords: stubRecords},
-		{name: "Max Retry", haveRetries: 1, haveErrors: 1, haveMsg: stubMsg, wantQueries: 1, wantRecords: []Record{}},
-		{name: "SERVFAIL Error", haveRetries: 3, haveErrors: 0, haveMsg: stubMsgSrvFail, wantQueries: 3, wantRecords: []Record{}},
-		{name: "NXDOMAIN Error", haveRetries: 3, haveErrors: 0, haveMsg: stubMsgNX, wantQueries: 1, wantRecords: []Record{}},
+	switch rrtype {
+	case TypeA:
+		stubA := &dns.A{}
+		stubA.Hdr.Rrtype = uint16(stubARecord.Type)
+		stubA.A = net.ParseIP(stubARecord.Answer)
+		stubMsg.Answer = []dns.RR{stubA}
+	case TypeCNAME:
+		stubCNAME := &dns.CNAME{}
+		stubCNAME.Hdr.Rrtype = uint16(stubCNAMERecord.Type)
+		stubCNAME.Target = stubCNAMERecord.Answer
+		stubMsg.Answer = []dns.RR{stubCNAME}
 	}
 
-	for _, test := range testTable {
-		t.Run(test.name, func(t *testing.T) {
-			stubMessageParser := &stubParser{}
-			fakeServer := &fakeServer{errors: test.haveErrors, msg: test.haveMsg}
-			spyBalancer := &spyBalancer{server: fakeServer}
+	return stubMsg
+}
 
-			resolver := newResolverDNS(test.haveRetries, spyBalancer, stubMessageParser)
+func TestResolve_Simple(t *testing.T) {
+	msg := createStubMessage(dns.RcodeSuccess, TypeA)
+	resolver, spyBalancer := createStubResolver(3, nil, 0, msg)
 
-			got := resolver.Resolve("test", TypeA)
+	got := resolver.Resolve("www.example.com", TypeA)
 
-			assert.EqualValues(t, test.wantRecords, got, test.name)
-			assert.EqualValues(t, test.wantQueries, spyBalancer.calls)
-		})
-	}
+	assert.EqualValues(t, []Record{stubARecord}, got)
+	assert.EqualValues(t, 1, spyBalancer.calls)
+}
+
+func TestResolve_Retry(t *testing.T) {
+	msg := createStubMessage(dns.RcodeSuccess, TypeA)
+	resolver, spyBalancer := createStubResolver(3, nil, 2, msg)
+
+	got := resolver.Resolve("www.example.com", TypeA)
+
+	assert.EqualValues(t, []Record{stubARecord}, got)
+	assert.EqualValues(t, 3, spyBalancer.calls)
+}
+
+func TestResolve_MaxRetry(t *testing.T) {
+	msg := createStubMessage(dns.RcodeSuccess, TypeA)
+	resolver, spyBalancer := createStubResolver(1, nil, 1, msg)
+
+	got := resolver.Resolve("www.example.com", TypeA)
+
+	assert.EqualValues(t, []Record(nil), got)
+	assert.EqualValues(t, 1, spyBalancer.calls)
+}
+
+func TestResolve_NXDOMAINWithCNAME(t *testing.T) {
+	msg := createStubMessage(dns.RcodeNameError, TypeCNAME)
+	resolver, spyBalancer := createStubResolver(1, nil, 0, msg)
+
+	got := resolver.Resolve("www.example.com", TypeCNAME)
+
+	assert.EqualValues(t, []Record{stubCNAMERecord}, got)
+	assert.EqualValues(t, 1, spyBalancer.calls)
+}
+
+func TestResolve_SERVFAILNoRetry(t *testing.T) {
+	msg := createStubMessage(dns.RcodeServerFailure, TypeA)
+	resolver, spyBalancer := createStubResolver(3, nil, 0, msg)
+
+	got := resolver.Resolve("www.example.com", TypeCNAME)
+
+	assert.EqualValues(t, []Record(nil), got)
+	assert.EqualValues(t, 1, spyBalancer.calls)
+}
+
+func TestResolve_SERVFAILWithRetry(t *testing.T) {
+	msg := createStubMessage(dns.RcodeServerFailure, TypeA)
+	resolver, spyBalancer := createStubResolver(3, []int{dns.RcodeServerFailure}, 0, msg)
+
+	got := resolver.Resolve("www.example.com", TypeCNAME)
+
+	assert.EqualValues(t, []Record(nil), got)
+	assert.EqualValues(t, 3, spyBalancer.calls)
 }
 
 func TestClose(t *testing.T) {
-	stubMessageParser := &stubParser{}
-	fakeServer := &fakeServer{errors: 0, msg: &dns.Msg{}}
-	spyBalancer := &spyBalancer{server: fakeServer}
+	msg := createStubMessage(dns.RcodeServerFailure, TypeA)
+	resolver, spyBalancer := createStubResolver(3, nil, 0, msg)
 
-	resolver := newResolverDNS(3, spyBalancer, stubMessageParser)
 	resolver.Close()
-
 	assert.EqualValues(t, 1, spyBalancer.closes)
 }

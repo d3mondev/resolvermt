@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - No changes yet.
 
+## [0.3.2] - 2021-05-27
+### Fixed
+- Records are returned even if the response is NXDOMAIN.
+
 ## [0.3.1] - 2021-04-21
 ### Changed
 - Retry with another resolver on SERVFAIL and REFUSED.

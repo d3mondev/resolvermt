@@ -8,6 +8,7 @@ type resolverDNS struct {
 	serverBalancer balancer
 	parser         messageParser
 
+	retryCodes map[int]struct{}
 	retryCount int
 }
 
@@ -20,17 +21,21 @@ type messageParser interface {
 	Parse(msg *dns.Msg) []Record
 }
 
-func newResolverDNS(retryCount int, serverBalancer balancer, parser messageParser) *resolverDNS {
+func newResolverDNS(retryCount int, retryCodes []int, serverBalancer balancer, parser messageParser) *resolverDNS {
+	retryMap := make(map[int]struct{}, len(retryCodes))
+	for _, code := range retryCodes {
+		retryMap[code] = struct{}{}
+	}
+
 	return &resolverDNS{
 		serverBalancer: serverBalancer,
 		parser:         parser,
+		retryCodes:     retryMap,
 		retryCount:     retryCount,
 	}
 }
 
 func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
-	records := []Record{}
-
 	var err error
 	var msg *dns.Msg
 
@@ -44,26 +49,24 @@ func (s *resolverDNS) Resolve(query string, rrtype RRtype) []Record {
 			continue
 		}
 
-		if msg.Rcode == dns.RcodeRefused || msg.Rcode == dns.RcodeServerFailure {
+		if _, ok := s.retryCodes[msg.Rcode]; ok {
 			continue
 		}
 
 		break
 	}
 
-	// Something went wrong with the request
+	// Max retry count reached
 	if i == s.retryCount {
-		return records
+		return nil
 	}
 
-	// Request was successful, but a valid error such as NXDOMAIN occured
-	if msg.Rcode != dns.RcodeSuccess {
-		return records
+	// Parse records only on success or NXDOMAIN
+	if msg.Rcode != dns.RcodeSuccess && msg.Rcode != dns.RcodeNameError {
+		return nil
 	}
 
-	records = s.parser.Parse(msg)
-
-	return records
+	return s.parser.Parse(msg)
 }
 
 func (s *resolverDNS) Close() {

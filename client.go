@@ -1,5 +1,7 @@
 package resolvermt
 
+import "github.com/miekg/dns"
+
 // Client is used to send DNS requests to resolvers concurrently.
 type Client interface {
 	Resolve(domains []string, rrtype RRtype) []Record
@@ -22,7 +24,7 @@ func New(resolvers []string, retryCount int, queriesPerSecond int, maxConcurrenc
 	servers := newRateLimitedServerList(resolvers, queriesPerSecond)
 	balancer := newServerBalancer(servers)
 	parser := &msgParser{}
-	resolver := newResolverDNS(retryCount, balancer, parser)
+	resolver := newResolverDNS(retryCount, []int{dns.RcodeRefused, dns.RcodeServerFailure}, balancer, parser)
 
 	return newClientDNS(resolver, maxConcurrency)
 }
