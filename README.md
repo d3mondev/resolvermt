@@ -4,7 +4,7 @@ This package provides a multithreaded and thread-safe DNS resolver client for Go
 
 Create a new resolver client and set the resolvers to use, the limit of queries per second and the total number of goroutines to create. When done, close the connections by calling Client.Close().
 
-```
+```go
 package resolvermt_test
 
 import (
